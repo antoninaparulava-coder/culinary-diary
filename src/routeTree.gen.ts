@@ -9,8 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MysteryBoxRouteImport } from './routes/mystery-box'
 import { Route as IndexRouteImport } from './routes/index'
 
+const MysteryBoxRoute = MysteryBoxRouteImport.update({
+  id: '/mystery-box',
+  path: '/mystery-box',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +25,39 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/mystery-box': typeof MysteryBoxRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/mystery-box': typeof MysteryBoxRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/mystery-box': typeof MysteryBoxRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/mystery-box'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/mystery-box'
+  id: '__root__' | '/' | '/mystery-box'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  MysteryBoxRoute: typeof MysteryBoxRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/mystery-box': {
+      id: '/mystery-box'
+      path: '/mystery-box'
+      fullPath: '/mystery-box'
+      preLoaderRoute: typeof MysteryBoxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +70,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  MysteryBoxRoute: MysteryBoxRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
