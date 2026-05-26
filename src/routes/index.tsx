@@ -140,7 +140,7 @@ function Index() {
                 Tuesday, May 26
               </p>
               <h2 className="mt-1 font-display text-2xl sm:text-3xl">
-                Good afternoon, Clara
+                Good afternoon, Antonina
               </h2>
             </div>
             <div className="flex items-center gap-2">
@@ -151,7 +151,7 @@ function Index() {
                 <Settings className="h-4 w-4" />
               </button>
               <div className="grid h-10 w-10 place-items-center rounded-full bg-sage text-sage-foreground font-medium text-sm">
-                C
+                A
               </div>
             </div>
           </header>
