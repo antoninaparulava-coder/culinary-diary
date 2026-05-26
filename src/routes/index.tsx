@@ -1,15 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
-  Refrigerator,
   Search,
-  CalendarDays,
-  Trophy,
   Plus,
   Sparkles,
   Bell,
   Settings,
 } from "lucide-react";
 import { useState } from "react";
+import { Sidebar } from "@/components/Sidebar";
+import { initialIngredients, toneClass, type Ingredient } from "@/lib/pantry";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -25,40 +24,6 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Ingredient = {
-  name: string;
-  emoji: string;
-  tone: "tomato" | "cheese" | "herb" | "berry" | "bread";
-};
-
-const initialIngredients: Ingredient[] = [
-  { name: "Tomato", emoji: "🍅", tone: "tomato" },
-  { name: "Parmesan", emoji: "🧀", tone: "cheese" },
-  { name: "Basil", emoji: "🌿", tone: "herb" },
-  { name: "Strawberry", emoji: "🍓", tone: "berry" },
-  { name: "Sourdough", emoji: "🍞", tone: "bread" },
-  { name: "Garlic", emoji: "🧄", tone: "bread" },
-  { name: "Spinach", emoji: "🥬", tone: "herb" },
-  { name: "Egg", emoji: "🥚", tone: "cheese" },
-  { name: "Olive Oil", emoji: "🫒", tone: "herb" },
-  { name: "Lemon", emoji: "🍋", tone: "cheese" },
-];
-
-const toneClass: Record<Ingredient["tone"], string> = {
-  tomato: "bg-[color:var(--tag-tomato)]/60 text-[oklch(0.35_0.08_30)]",
-  cheese: "bg-[color:var(--tag-cheese)]/60 text-[oklch(0.4_0.08_85)]",
-  herb: "bg-[color:var(--tag-herb)]/60 text-[oklch(0.35_0.08_145)]",
-  berry: "bg-[color:var(--tag-berry)]/60 text-[oklch(0.38_0.08_0)]",
-  bread: "bg-[color:var(--tag-bread)]/60 text-[oklch(0.38_0.06_70)]",
-};
-
-const navItems = [
-  { label: "My Pantry", icon: Refrigerator, active: true },
-  { label: "Recipe Search", icon: Search, active: false },
-  { label: "Meal Calendar", icon: CalendarDays, active: false },
-  { label: "Community Challenges", icon: Trophy, active: false },
-];
-
 const week = [
   { day: "Mon", date: "26", meal: "Tomato Basil Pasta", emoji: "🍝", today: false },
   { day: "Tue", date: "27", meal: "Lemon Roast Chicken", emoji: "🍗", today: true },
@@ -70,7 +35,7 @@ const week = [
 ];
 
 function Index() {
-  const [ingredients, setIngredients] = useState(initialIngredients);
+  const [ingredients, setIngredients] = useState<Ingredient[]>(initialIngredients);
   const [query, setQuery] = useState("");
 
   const addIngredient = (e: React.FormEvent) => {
@@ -87,49 +52,7 @@ function Index() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex max-w-[1400px] flex-col lg:flex-row">
-        {/* Sidebar */}
-        <aside className="lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-card/40 backdrop-blur">
-          <div className="flex h-full flex-col p-5">
-            <div className="flex items-center gap-2 px-2 py-2">
-              <div className="grid h-9 w-9 place-items-center rounded-xl bg-sage text-sage-foreground">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <div>
-                <h1 className="text-base font-semibold leading-none">Culinary</h1>
-                <p className="text-xs text-muted-foreground mt-1">Diary</p>
-              </div>
-            </div>
-
-            <nav className="mt-8 flex flex-row gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.label}
-                    className={`group flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
-                      item.active
-                        ? "bg-sage-soft text-[oklch(0.32_0.06_145)]"
-                        : "text-muted-foreground hover:bg-beige hover:text-foreground"
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span className="whitespace-nowrap">{item.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
-
-            <div className="mt-auto hidden lg:block">
-              <div className="rounded-2xl bg-beige p-4">
-                <p className="text-xs text-muted-foreground">Pantry items</p>
-                <p className="mt-1 font-display text-2xl">{ingredients.length}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Fresh & ready to cook
-                </p>
-              </div>
-            </div>
-          </div>
-        </aside>
+        <Sidebar pantryCount={ingredients.length} />
 
         {/* Main */}
         <main className="flex-1 px-5 py-6 sm:px-8 lg:px-10">
