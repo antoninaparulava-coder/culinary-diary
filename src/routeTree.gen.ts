@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RecipesRouteImport } from './routes/recipes'
 import { Route as MysteryBoxRouteImport } from './routes/mystery-box'
+import { Route as ChallengesRouteImport } from './routes/challenges'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -22,6 +23,11 @@ const RecipesRoute = RecipesRouteImport.update({
 const MysteryBoxRoute = MysteryBoxRouteImport.update({
   id: '/mystery-box',
   path: '/mystery-box',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChallengesRoute = ChallengesRouteImport.update({
+  id: '/challenges',
+  path: '/challenges',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CalendarRoute = CalendarRouteImport.update({
@@ -38,12 +44,14 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
+  '/challenges': typeof ChallengesRoute
   '/mystery-box': typeof MysteryBoxRoute
   '/recipes': typeof RecipesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
+  '/challenges': typeof ChallengesRoute
   '/mystery-box': typeof MysteryBoxRoute
   '/recipes': typeof RecipesRoute
 }
@@ -51,20 +59,28 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
+  '/challenges': typeof ChallengesRoute
   '/mystery-box': typeof MysteryBoxRoute
   '/recipes': typeof RecipesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/calendar' | '/mystery-box' | '/recipes'
+  fullPaths: '/' | '/calendar' | '/challenges' | '/mystery-box' | '/recipes'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/calendar' | '/mystery-box' | '/recipes'
-  id: '__root__' | '/' | '/calendar' | '/mystery-box' | '/recipes'
+  to: '/' | '/calendar' | '/challenges' | '/mystery-box' | '/recipes'
+  id:
+    | '__root__'
+    | '/'
+    | '/calendar'
+    | '/challenges'
+    | '/mystery-box'
+    | '/recipes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalendarRoute: typeof CalendarRoute
+  ChallengesRoute: typeof ChallengesRoute
   MysteryBoxRoute: typeof MysteryBoxRoute
   RecipesRoute: typeof RecipesRoute
 }
@@ -83,6 +99,13 @@ declare module '@tanstack/react-router' {
       path: '/mystery-box'
       fullPath: '/mystery-box'
       preLoaderRoute: typeof MysteryBoxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/challenges': {
+      id: '/challenges'
+      path: '/challenges'
+      fullPath: '/challenges'
+      preLoaderRoute: typeof ChallengesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/calendar': {
@@ -105,6 +128,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalendarRoute: CalendarRoute,
+  ChallengesRoute: ChallengesRoute,
   MysteryBoxRoute: MysteryBoxRoute,
   RecipesRoute: RecipesRoute,
 }
