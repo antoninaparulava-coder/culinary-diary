@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RecipesRouteImport } from './routes/recipes'
 import { Route as MysteryBoxRouteImport } from './routes/mystery-box'
+import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
 
 const RecipesRoute = RecipesRouteImport.update({
@@ -23,6 +24,11 @@ const MysteryBoxRoute = MysteryBoxRouteImport.update({
   path: '/mystery-box',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -31,30 +37,34 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
   '/mystery-box': typeof MysteryBoxRoute
   '/recipes': typeof RecipesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
   '/mystery-box': typeof MysteryBoxRoute
   '/recipes': typeof RecipesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
   '/mystery-box': typeof MysteryBoxRoute
   '/recipes': typeof RecipesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/mystery-box' | '/recipes'
+  fullPaths: '/' | '/calendar' | '/mystery-box' | '/recipes'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/mystery-box' | '/recipes'
-  id: '__root__' | '/' | '/mystery-box' | '/recipes'
+  to: '/' | '/calendar' | '/mystery-box' | '/recipes'
+  id: '__root__' | '/' | '/calendar' | '/mystery-box' | '/recipes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CalendarRoute: typeof CalendarRoute
   MysteryBoxRoute: typeof MysteryBoxRoute
   RecipesRoute: typeof RecipesRoute
 }
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MysteryBoxRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CalendarRoute: CalendarRoute,
   MysteryBoxRoute: MysteryBoxRoute,
   RecipesRoute: RecipesRoute,
 }
