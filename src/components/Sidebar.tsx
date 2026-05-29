@@ -17,10 +17,10 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { label: "My Pantry", to: "/", icon: Refrigerator },
-  { label: "Recipe Search", to: "/", icon: Search },
-  { label: "Meal Calendar", to: "/", icon: CalendarDays },
+  { label: "Recipe Search", to: "/recipes", icon: Search },
+  { label: "Meal Calendar", to: "/calendar", icon: CalendarDays },
   { label: "Mystery Box", to: "/mystery-box", icon: Gift },
-  { label: "Community Challenges", to: "/", icon: Trophy },
+  { label: "Community Challenges", to: "/challenges", icon: Trophy },
 ];
 
 export function Sidebar({ pantryCount }: { pantryCount: number }) {
@@ -44,10 +44,7 @@ export function Sidebar({ pantryCount }: { pantryCount: number }) {
         <nav className="mt-8 flex flex-row gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const active =
-              item.to === "/mystery-box"
-                ? pathname === "/mystery-box"
-                : pathname === "/" && item.label === "My Pantry";
+            const active = pathname === item.to;
             return (
               <Link
                 key={item.label}
