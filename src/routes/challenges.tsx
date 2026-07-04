@@ -137,19 +137,19 @@ function ChallengesPage() {
                       aria-pressed={isJoined}
                       className={
                         isJoined
-                          ? "group inline-flex items-center gap-1.5 rounded-full border border-sage/40 bg-sage-soft px-4 py-2 text-xs font-medium text-[oklch(0.35_0.06_145)] hover:bg-[color:var(--destructive)]/10 hover:border-[color:var(--destructive)]/40 hover:text-[color:var(--destructive)] transition-all"
-                          : "inline-flex items-center gap-1.5 rounded-full bg-sage px-4 py-2 text-xs font-medium text-sage-foreground shadow-sm shadow-sage/20 hover:shadow-md hover:shadow-sage/30 hover:-translate-y-0.5 transition-all"
+                          ? "group inline-flex items-center justify-center gap-1.5 rounded-full border border-sage/40 bg-sage-soft px-4 py-2 text-xs font-medium text-[oklch(0.35_0.06_145)] hover:bg-[color:var(--destructive)]/10 hover:border-[color:var(--destructive)]/40 hover:text-[color:var(--destructive)] transition-all w-[140px]"
+                          : "inline-flex items-center justify-center gap-1.5 rounded-full bg-sage px-4 py-2 text-xs font-medium text-sage-foreground shadow-sm shadow-sage/20 hover:shadow-md hover:shadow-sage/30 hover:-translate-y-0.5 transition-all w-[140px]"
                       }
                     >
                       {isJoined ? (
                         <>
-                          <Check className="h-3.5 w-3.5 group-hover:hidden" />
+                          <Check className="h-3.5 w-3.5 group-hover:hidden shrink-0" />
                           <span className="group-hover:hidden">Joined</span>
                           <span className="hidden group-hover:inline">Leave</span>
                         </>
                       ) : (
                         <>
-                          <Trophy className="h-3.5 w-3.5" />
+                          <Trophy className="h-3.5 w-3.5 shrink-0" />
                           Join Challenge
                         </>
                       )}
