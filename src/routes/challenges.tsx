@@ -104,6 +104,8 @@ function ChallengesPage() {
           <section className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {challenges.map((c) => {
               const isJoined = !!joined[c.title];
+              const proofUrl = proofs[c.title];
+              const isCompleted = isJoined && !!proofUrl;
               const participants = c.participants + (isJoined ? 1 : 0);
               const pct = Math.round((participants / c.goal) * 100);
               return (
@@ -146,33 +148,72 @@ function ChallengesPage() {
                     </div>
                   </div>
 
-                  <div className="mt-5 flex items-center justify-between gap-3 border-t border-border pt-4">
+                  {isCompleted && (
+                    <div className="mt-4 flex items-center gap-3 rounded-2xl bg-sage-soft p-3">
+                      <img
+                        src={proofUrl!}
+                        alt="Proof thumbnail"
+                        className="h-10 w-10 rounded-xl object-cover ring-1 ring-sage/20"
+                      />
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-[oklch(0.35_0.06_145)]">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Completed
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="mt-auto flex items-center justify-between gap-3 border-t border-border pt-4">
                     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3.5 w-3.5" />
                       {c.daysLeft} days left
                     </span>
-                    <button
-                      onClick={() => toggle(c.title)}
-                      aria-pressed={isJoined}
-                      className={
-                        isJoined
-                          ? "group inline-flex items-center justify-center gap-1.5 rounded-full border border-sage/40 bg-sage-soft px-4 py-2 text-xs font-medium text-[oklch(0.35_0.06_145)] hover:bg-[color:var(--destructive)]/10 hover:border-[color:var(--destructive)]/40 hover:text-[color:var(--destructive)] transition-all w-[140px]"
-                          : "inline-flex items-center justify-center gap-1.5 rounded-full bg-sage px-4 py-2 text-xs font-medium text-sage-foreground shadow-sm shadow-sage/20 hover:shadow-md hover:shadow-sage/30 hover:-translate-y-0.5 transition-all w-[140px]"
-                      }
-                    >
-                      {isJoined ? (
+                    <div className="flex items-center gap-2">
+                      {isJoined && !isCompleted && (
                         <>
-                          <Check className="h-3.5 w-3.5 group-hover:hidden shrink-0" />
-                          <span className="group-hover:hidden">Joined</span>
-                          <span className="hidden group-hover:inline">Leave</span>
-                        </>
-                      ) : (
-                        <>
-                          <Trophy className="h-3.5 w-3.5 shrink-0" />
-                          Join Challenge
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            id={`proof-${c.title}`}
+                            onChange={(e) =>
+                              handleFileChange(
+                                c.title,
+                                e.target.files?.[0] ?? null
+                              )
+                            }
+                          />
+                          <label
+                            htmlFor={`proof-${c.title}`}
+                            className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full bg-sage px-3 py-2 text-xs font-medium text-sage-foreground shadow-sm shadow-sage/20 hover:shadow-md hover:shadow-sage/30 hover:-translate-y-0.5 transition-all"
+                          >
+                            <Camera className="h-3.5 w-3.5 shrink-0" />
+                            Submit Proof
+                          </label>
                         </>
                       )}
-                    </button>
+                      <button
+                        onClick={() => toggle(c.title)}
+                        aria-pressed={isJoined}
+                        className={
+                          isJoined
+                            ? "group inline-flex items-center justify-center gap-1.5 rounded-full border border-sage/40 bg-sage-soft px-4 py-2 text-xs font-medium text-[oklch(0.35_0.06_145)] hover:bg-[color:var(--destructive)]/10 hover:border-[color:var(--destructive)]/40 hover:text-[color:var(--destructive)] transition-all w-[140px]"
+                            : "inline-flex items-center justify-center gap-1.5 rounded-full bg-sage px-4 py-2 text-xs font-medium text-sage-foreground shadow-sm shadow-sage/20 hover:shadow-md hover:shadow-sage/30 hover:-translate-y-0.5 transition-all w-[140px]"
+                        }
+                      >
+                        {isJoined ? (
+                          <>
+                            <Check className="h-3.5 w-3.5 group-hover:hidden shrink-0" />
+                            <span className="group-hover:hidden">Joined</span>
+                            <span className="hidden group-hover:inline">Leave</span>
+                          </>
+                        ) : (
+                          <>
+                            <Trophy className="h-3.5 w-3.5 shrink-0" />
+                            Join Challenge
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </article>
               );
