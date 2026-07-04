@@ -1,6 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Trophy, Users, Clock, Flame, Check } from "lucide-react";
+import {
+  Trophy,
+  Users,
+  Clock,
+  Flame,
+  Check,
+  Camera,
+  Upload,
+  Sparkles,
+} from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { initialIngredients } from "@/lib/pantry";
 
