@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Trophy, Users, Clock, Flame } from "lucide-react";
+import { useState } from "react";
+import { Trophy, Users, Clock, Flame, Check } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { initialIngredients } from "@/lib/pantry";
 
@@ -57,6 +58,11 @@ const challenges: Challenge[] = [
 ];
 
 function ChallengesPage() {
+  const [joined, setJoined] = useState<Record<string, boolean>>({});
+
+  const toggle = (title: string) =>
+    setJoined((prev) => ({ ...prev, [title]: !prev[title] }));
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex max-w-[1400px] flex-col lg:flex-row">
@@ -78,7 +84,9 @@ function ChallengesPage() {
 
           <section className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {challenges.map((c) => {
-              const pct = Math.round((c.participants / c.goal) * 100);
+              const isJoined = !!joined[c.title];
+              const participants = c.participants + (isJoined ? 1 : 0);
+              const pct = Math.round((participants / c.goal) * 100);
               return (
                 <article
                   key={c.title}
@@ -105,7 +113,7 @@ function ChallengesPage() {
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span className="inline-flex items-center gap-1.5">
                         <Users className="h-3.5 w-3.5" />
-                        {c.participants}/{c.goal} participants
+                        {participants}/{c.goal} participants
                       </span>
                       <span className="font-medium text-foreground">
                         {pct}%
@@ -113,7 +121,7 @@ function ChallengesPage() {
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-beige">
                       <div
-                        className="h-full rounded-full bg-sage transition-all"
+                        className="h-full rounded-full bg-sage transition-all duration-500 ease-out"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -124,9 +132,27 @@ function ChallengesPage() {
                       <Clock className="h-3.5 w-3.5" />
                       {c.daysLeft} days left
                     </span>
-                    <button className="inline-flex items-center gap-1.5 rounded-full bg-sage px-4 py-2 text-xs font-medium text-sage-foreground shadow-sm shadow-sage/20 hover:shadow-md hover:shadow-sage/30 hover:-translate-y-0.5 transition-all">
-                      <Trophy className="h-3.5 w-3.5" />
-                      Join Challenge
+                    <button
+                      onClick={() => toggle(c.title)}
+                      aria-pressed={isJoined}
+                      className={
+                        isJoined
+                          ? "group inline-flex items-center gap-1.5 rounded-full border border-sage/40 bg-sage-soft px-4 py-2 text-xs font-medium text-[oklch(0.35_0.06_145)] hover:bg-[color:var(--destructive)]/10 hover:border-[color:var(--destructive)]/40 hover:text-[color:var(--destructive)] transition-all"
+                          : "inline-flex items-center gap-1.5 rounded-full bg-sage px-4 py-2 text-xs font-medium text-sage-foreground shadow-sm shadow-sage/20 hover:shadow-md hover:shadow-sage/30 hover:-translate-y-0.5 transition-all"
+                      }
+                    >
+                      {isJoined ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 group-hover:hidden" />
+                          <span className="group-hover:hidden">Joined</span>
+                          <span className="hidden group-hover:inline">Leave</span>
+                        </>
+                      ) : (
+                        <>
+                          <Trophy className="h-3.5 w-3.5" />
+                          Join Challenge
+                        </>
+                      )}
                     </button>
                   </div>
                 </article>
