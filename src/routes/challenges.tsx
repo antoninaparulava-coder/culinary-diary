@@ -69,7 +69,7 @@ const challenges: Challenge[] = [
 function ChallengesPage() {
   const [joined, setJoined] = useState<Record<string, boolean>>({});
   const [proofs, setProofs] = useState<Record<string, string | null>>({});
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggle = (title: string) =>
     setJoined((prev) => ({ ...prev, [title]: !prev[title] }));
