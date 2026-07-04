@@ -68,9 +68,19 @@ const challenges: Challenge[] = [
 
 function ChallengesPage() {
   const [joined, setJoined] = useState<Record<string, boolean>>({});
+  const [proofs, setProofs] = useState<Record<string, string | null>>({});
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const toggle = (title: string) =>
     setJoined((prev) => ({ ...prev, [title]: !prev[title] }));
+
+  const handleProofClick = () => fileInputRef.current?.click();
+
+  const handleFileChange = (title: string, file: File | null) => {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setProofs((prev) => ({ ...prev, [title]: url }));
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
