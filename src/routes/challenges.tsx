@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import {
   Trophy,
   Users,
@@ -7,8 +7,8 @@ import {
   Flame,
   Check,
   Camera,
-  Upload,
   Sparkles,
+  Heart,
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { initialIngredients } from "@/lib/pantry";
@@ -31,6 +31,13 @@ type Challenge = {
   goal: number;
   daysLeft: number;
   tag: string;
+};
+
+type Submission = {
+  id: string;
+  author: string;
+  imageUrl: string;
+  votes: number;
 };
 
 const challenges: Challenge[] = [
@@ -66,9 +73,57 @@ const challenges: Challenge[] = [
   },
 ];
 
+const initialSubmissions: Record<string, Submission[]> = {
+  "Bake Your Own Sourdough Bread": [
+    {
+      id: "s1",
+      author: "Maya",
+      imageUrl:
+        "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&auto=format&fit=crop",
+      votes: 42,
+    },
+    {
+      id: "s2",
+      author: "Jonas",
+      imageUrl:
+        "https://images.unsplash.com/photo-1585478259715-876acc5be8eb?w=400&auto=format&fit=crop",
+      votes: 27,
+    },
+  ],
+  "5-Ingredient Sunday Dinner": [
+    {
+      id: "s3",
+      author: "Priya",
+      imageUrl:
+        "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&auto=format&fit=crop",
+      votes: 18,
+    },
+  ],
+  "Garden to Plate Week": [
+    {
+      id: "s4",
+      author: "Eli",
+      imageUrl:
+        "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&auto=format&fit=crop",
+      votes: 31,
+    },
+    {
+      id: "s5",
+      author: "Ana",
+      imageUrl:
+        "https://images.unsplash.com/photo-1519996529931-28324d5a630e?w=400&auto=format&fit=crop",
+      votes: 12,
+    },
+  ],
+};
+
 function ChallengesPage() {
   const [joined, setJoined] = useState<Record<string, boolean>>({});
   const [proofs, setProofs] = useState<Record<string, string | null>>({});
+  const [submissions, setSubmissions] =
+    useState<Record<string, Submission[]>>(initialSubmissions);
+  const [voted, setVoted] = useState<Record<string, boolean>>({});
+
   const toggle = (title: string) =>
     setJoined((prev) => ({ ...prev, [title]: !prev[title] }));
 
@@ -76,6 +131,28 @@ function ChallengesPage() {
     if (!file) return;
     const url = URL.createObjectURL(file);
     setProofs((prev) => ({ ...prev, [title]: url }));
+    const newSub: Submission = {
+      id: `me-${title}-${Date.now()}`,
+      author: "You",
+      imageUrl: url,
+      votes: 0,
+    };
+    setSubmissions((prev) => ({
+      ...prev,
+      [title]: [newSub, ...(prev[title] ?? [])],
+    }));
+  };
+
+  const toggleVote = (subId: string, title: string) => {
+    const key = `${title}:${subId}`;
+    const hasVoted = !!voted[key];
+    setVoted((prev) => ({ ...prev, [key]: !hasVoted }));
+    setSubmissions((prev) => ({
+      ...prev,
+      [title]: (prev[title] ?? []).map((s) =>
+        s.id === subId ? { ...s, votes: s.votes + (hasVoted ? -1 : 1) } : s
+      ),
+    }));
   };
 
   return (
@@ -104,6 +181,7 @@ function ChallengesPage() {
               const isCompleted = isJoined && !!proofUrl;
               const participants = c.participants + (isJoined ? 1 : 0);
               const pct = Math.round((participants / c.goal) * 100);
+              const subs = submissions[c.title] ?? [];
               return (
                 <article
                   key={c.title}
@@ -155,6 +233,62 @@ function ChallengesPage() {
                         <Sparkles className="h-3.5 w-3.5" />
                         Completed
                       </span>
+                    </div>
+                  )}
+
+                  {subs.length > 0 && (
+                    <div className="mt-5 border-t border-border pt-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Submissions Gallery
+                        </h4>
+                        <span className="text-[11px] text-muted-foreground">
+                          {subs.length} {subs.length === 1 ? "dish" : "dishes"}
+                        </span>
+                      </div>
+                      <ul className="mt-3 grid grid-cols-2 gap-3">
+                        {subs.map((s) => {
+                          const key = `${c.title}:${s.id}`;
+                          const hasVoted = !!voted[key];
+                          return (
+                            <li
+                              key={s.id}
+                              className="group relative overflow-hidden rounded-2xl border border-border bg-background"
+                            >
+                              <div className="aspect-square w-full overflow-hidden bg-beige">
+                                <img
+                                  src={s.imageUrl}
+                                  alt={`${s.author}'s submission`}
+                                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                />
+                              </div>
+                              <div className="flex items-center justify-between px-2.5 py-2">
+                                <span className="truncate text-xs font-medium">
+                                  {s.author}
+                                </span>
+                                <button
+                                  onClick={() => toggleVote(s.id, c.title)}
+                                  aria-pressed={hasVoted}
+                                  className={
+                                    hasVoted
+                                      ? "inline-flex items-center gap-1 rounded-full bg-[color:var(--destructive)]/10 px-2 py-1 text-[11px] font-semibold text-[color:var(--destructive)] transition-all"
+                                      : "inline-flex items-center gap-1 rounded-full bg-beige px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-[color:var(--destructive)]/10 hover:text-[color:var(--destructive)] transition-all"
+                                  }
+                                >
+                                  <Heart
+                                    className={
+                                      hasVoted
+                                        ? "h-3 w-3 fill-current"
+                                        : "h-3 w-3"
+                                    }
+                                  />
+                                  {s.votes}
+                                </button>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
                     </div>
                   )}
 
