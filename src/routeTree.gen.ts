@@ -14,6 +14,7 @@ import { Route as MysteryBoxRouteImport } from './routes/mystery-box'
 import { Route as ChallengesRouteImport } from './routes/challenges'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ChallengesIndexRouteImport } from './routes/challenges.index'
 import { Route as ChallengesSlugRouteImport } from './routes/challenges.$slug'
 
 const RecipesRoute = RecipesRouteImport.update({
@@ -41,6 +42,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChallengesIndexRoute = ChallengesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ChallengesRoute,
+} as any)
 const ChallengesSlugRoute = ChallengesSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -54,14 +60,15 @@ export interface FileRoutesByFullPath {
   '/mystery-box': typeof MysteryBoxRoute
   '/recipes': typeof RecipesRoute
   '/challenges/$slug': typeof ChallengesSlugRoute
+  '/challenges/': typeof ChallengesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
-  '/challenges': typeof ChallengesRouteWithChildren
   '/mystery-box': typeof MysteryBoxRoute
   '/recipes': typeof RecipesRoute
   '/challenges/$slug': typeof ChallengesSlugRoute
+  '/challenges': typeof ChallengesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +78,7 @@ export interface FileRoutesById {
   '/mystery-box': typeof MysteryBoxRoute
   '/recipes': typeof RecipesRoute
   '/challenges/$slug': typeof ChallengesSlugRoute
+  '/challenges/': typeof ChallengesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,14 +89,15 @@ export interface FileRouteTypes {
     | '/mystery-box'
     | '/recipes'
     | '/challenges/$slug'
+    | '/challenges/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/calendar'
-    | '/challenges'
     | '/mystery-box'
     | '/recipes'
     | '/challenges/$slug'
+    | '/challenges'
   id:
     | '__root__'
     | '/'
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/mystery-box'
     | '/recipes'
     | '/challenges/$slug'
+    | '/challenges/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -144,6 +154,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/challenges/': {
+      id: '/challenges/'
+      path: '/'
+      fullPath: '/challenges/'
+      preLoaderRoute: typeof ChallengesIndexRouteImport
+      parentRoute: typeof ChallengesRoute
+    }
     '/challenges/$slug': {
       id: '/challenges/$slug'
       path: '/$slug'
@@ -156,10 +173,12 @@ declare module '@tanstack/react-router' {
 
 interface ChallengesRouteChildren {
   ChallengesSlugRoute: typeof ChallengesSlugRoute
+  ChallengesIndexRoute: typeof ChallengesIndexRoute
 }
 
 const ChallengesRouteChildren: ChallengesRouteChildren = {
   ChallengesSlugRoute: ChallengesSlugRoute,
+  ChallengesIndexRoute: ChallengesIndexRoute,
 }
 
 const ChallengesRouteWithChildren = ChallengesRoute._addFileChildren(
