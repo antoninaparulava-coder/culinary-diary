@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Medal,
   Crown,
+  Trash2,
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { initialIngredients } from "@/lib/pantry";
@@ -19,6 +20,7 @@ import {
   useChallengeStore,
   toggleJoin,
   submitProof,
+  deleteSubmission,
 } from "@/lib/challenges";
 
 export const Route = createFileRoute("/challenges/")({
