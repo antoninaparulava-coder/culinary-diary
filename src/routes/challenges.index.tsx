@@ -130,10 +130,19 @@ function ChallengesPage() {
                         alt="Proof thumbnail"
                         className="h-10 w-10 rounded-xl object-cover ring-1 ring-sage/20"
                       />
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-[oklch(0.35_0.06_145)]">
+                      <span className="inline-flex flex-1 items-center gap-1 text-xs font-semibold text-[oklch(0.35_0.06_145)]">
                         <Sparkles className="h-3.5 w-3.5" />
                         Completed
                       </span>
+                      {ownSub && (
+                        <button
+                          onClick={() => deleteSubmission(c.slug, ownSub.id)}
+                          aria-label="Delete your submission"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-background text-[color:var(--destructive)] hover:bg-[color:var(--destructive)] hover:text-white transition-all"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   )}
 
