@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Heart, Flame, Users, Clock, Trophy } from "lucide-react";
+import { ArrowLeft, Heart, Flame, Users, Clock, Trophy, Trash2 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { initialIngredients } from "@/lib/pantry";
 import {
