@@ -82,6 +82,7 @@ function ChallengesPage() {
               const pct = Math.round((participants / c.goal) * 100);
               const subs = submissions[c.slug] ?? [];
               const previewSubs = subs.slice(0, 4);
+              const ownSub = subs.find((s) => s.id.startsWith("me-"));
               return (
                 <article
                   key={c.slug}
