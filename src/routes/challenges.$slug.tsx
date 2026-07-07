@@ -1,11 +1,12 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Heart, Flame, Users, Clock, Trophy } from "lucide-react";
+import { ArrowLeft, Heart, Flame, Users, Clock, Trophy, Trash2 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { initialIngredients } from "@/lib/pantry";
 import {
   getChallengeBySlug,
   useChallengeStore,
   toggleVote,
+  deleteSubmission,
 } from "@/lib/challenges";
 
 export const Route = createFileRoute("/challenges/$slug")({
@@ -117,6 +118,7 @@ function GalleryPage() {
               {subs.map((s, i) => {
                 const key = `${challenge.slug}:${s.id}`;
                 const hasVoted = !!voted[key];
+                const isOwn = s.id.startsWith("me-");
                 return (
                   <article
                     key={s.id}
@@ -132,6 +134,15 @@ function GalleryPage() {
                         <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground shadow-sm">
                           #{i + 1}
                         </span>
+                      )}
+                      {isOwn && (
+                        <button
+                          onClick={() => deleteSubmission(challenge.slug, s.id)}
+                          aria-label="Delete your submission"
+                          className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-background/90 text-[color:var(--destructive)] shadow-sm opacity-0 group-hover:opacity-100 hover:bg-[color:var(--destructive)] hover:text-white transition-all"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       )}
                     </div>
                     <div className="flex items-center justify-between gap-2 p-3">

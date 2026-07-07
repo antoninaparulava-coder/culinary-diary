@@ -166,8 +166,45 @@ export function useChallengeStore() {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
+const isOwn = (id: string) => id.startsWith("me-");
+
+export const deleteSubmission = (slug: string, subId: string) => {
+  const remaining = (current.submissions[slug] ?? []).filter(
+    (s) => s.id !== subId
+  );
+  const nextVoted = { ...current.voted };
+  delete nextVoted[`${slug}:${subId}`];
+  const nextProofs = { ...current.proofs };
+  const stillHasOwn = remaining.some((s) => isOwn(s.id));
+  if (!stillHasOwn) nextProofs[slug] = null;
+  update({
+    submissions: { ...current.submissions, [slug]: remaining },
+    voted: nextVoted,
+    proofs: nextProofs,
+  });
+};
+
 export const toggleJoin = (slug: string) => {
-  update({ joined: { ...current.joined, [slug]: !current.joined[slug] } });
+  const leaving = !!current.joined[slug];
+  if (leaving) {
+    // Auto-delete user's own submissions when leaving
+    const remaining = (current.submissions[slug] ?? []).filter(
+      (s) => !isOwn(s.id)
+    );
+    const nextVoted = { ...current.voted };
+    Object.keys(nextVoted).forEach((k) => {
+      if (k.startsWith(`${slug}:me-`)) delete nextVoted[k];
+    });
+    const nextProofs = { ...current.proofs, [slug]: null };
+    update({
+      joined: { ...current.joined, [slug]: false },
+      submissions: { ...current.submissions, [slug]: remaining },
+      voted: nextVoted,
+      proofs: nextProofs,
+    });
+  } else {
+    update({ joined: { ...current.joined, [slug]: true } });
+  }
 };
 
 export const submitProof = (slug: string, file: File) => {
@@ -200,3 +237,4 @@ export const toggleVote = (slug: string, subId: string) => {
     },
   });
 };
+
