@@ -148,48 +148,55 @@ const state: State = {
   },
 };
 
+let current: State = state;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 const subscribe = (l: () => void) => {
   listeners.add(l);
   return () => listeners.delete(l);
 };
-const getSnapshot = () => state;
+const getSnapshot = () => current;
+
+const update = (patch: Partial<State>) => {
+  current = { ...current, ...patch };
+  emit();
+};
 
 export function useChallengeStore() {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
 export const toggleJoin = (slug: string) => {
-  state.joined = { ...state.joined, [slug]: !state.joined[slug] };
-  emit();
+  update({ joined: { ...current.joined, [slug]: !current.joined[slug] } });
 };
 
 export const submitProof = (slug: string, file: File) => {
   const url = URL.createObjectURL(file);
-  state.proofs = { ...state.proofs, [slug]: url };
   const newSub: Submission = {
     id: `me-${slug}-${Date.now()}`,
     author: "You",
     imageUrl: url,
     votes: 0,
   };
-  state.submissions = {
-    ...state.submissions,
-    [slug]: [newSub, ...(state.submissions[slug] ?? [])],
-  };
-  emit();
+  update({
+    proofs: { ...current.proofs, [slug]: url },
+    submissions: {
+      ...current.submissions,
+      [slug]: [newSub, ...(current.submissions[slug] ?? [])],
+    },
+  });
 };
 
 export const toggleVote = (slug: string, subId: string) => {
   const key = `${slug}:${subId}`;
-  const hasVoted = !!state.voted[key];
-  state.voted = { ...state.voted, [key]: !hasVoted };
-  state.submissions = {
-    ...state.submissions,
-    [slug]: (state.submissions[slug] ?? []).map((s) =>
-      s.id === subId ? { ...s, votes: s.votes + (hasVoted ? -1 : 1) } : s
-    ),
-  };
-  emit();
+  const hasVoted = !!current.voted[key];
+  update({
+    voted: { ...current.voted, [key]: !hasVoted },
+    submissions: {
+      ...current.submissions,
+      [slug]: (current.submissions[slug] ?? []).map((s) =>
+        s.id === subId ? { ...s, votes: s.votes + (hasVoted ? -1 : 1) } : s
+      ),
+    },
+  });
 };
