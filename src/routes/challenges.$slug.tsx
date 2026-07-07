@@ -6,6 +6,7 @@ import {
   getChallengeBySlug,
   useChallengeStore,
   toggleVote,
+  deleteSubmission,
 } from "@/lib/challenges";
 
 export const Route = createFileRoute("/challenges/$slug")({
