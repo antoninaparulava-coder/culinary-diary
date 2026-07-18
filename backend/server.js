@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const Recipe = require('./models/Recipe')
 
 dotenv.config();
 
@@ -19,6 +20,16 @@ mongoose.connect(process.env.MONGO_URI)
 // Simple test route
 app.get('/', (req, res) => {
   res.send('Culinary Diary API is running...');
+});
+
+// ყველა რეცეპტის წამოსაღები ენდპოინტი
+app.get('/api/recipes', async (req, res) => {
+  try {
+    const recipes = await Recipe.find(); // ბაზიდან ყველა რეცეპტის წამოღება
+    res.json(recipes);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 const PORT = process.env.PORT || 5000;
