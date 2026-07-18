@@ -6,8 +6,20 @@ const recipeSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  emoji: {
+    type: String,
+    default: '🍳'
+  },
+  blurb: {
+    type: String,
+    trim: true
+  },
+  tags: {
+    type: [String],
+    default: []
+  },
   ingredients: {
-    type: [String], // ტექსტების მასივი ინგრედიენტებისთვის
+    type: [String],
     required: true
   },
   instructions: {
@@ -15,7 +27,7 @@ const recipeSchema = new mongoose.Schema({
     required: true
   },
   prepTime: {
-    type: Number, // მომზადების დრო წუთებში
+    type: Number,
     default: 0
   },
   createdAt: {
