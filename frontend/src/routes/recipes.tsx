@@ -14,6 +14,8 @@ interface BackendRecipe {
   ingredients: string[];
   instructions: string;
   prepTime: number;
+  calories?: number;
+  difficulty?: "Easy" | "Medium" | "Hard";
 }
 
 export const Route = createFileRoute("/recipes")({
@@ -74,8 +76,16 @@ function RecipesPage() {
     );
 
     // სორტირება ფილტრების მიხედვით
+    // სორტირება ფილტრების მიხედვით
     if (activeFilter === "time") {
       filteredList.sort((a, b) => a.recipe.prepTime - b.recipe.prepTime);
+    } else if (activeFilter === "calories") {
+      filteredList.sort((a, b) => (a.recipe.calories || 0) - (b.recipe.calories || 0));
+    } else if (activeFilter === "difficulty") {
+      const order = { Easy: 0, Medium: 1, Hard: 2 };
+      filteredList.sort(
+        (a, b) => (order[a.recipe.difficulty || "Easy"]) - (order[b.recipe.difficulty || "Easy"])
+      );
     } else {
       filteredList.sort((a, b) => b.score - a.score);
     }
