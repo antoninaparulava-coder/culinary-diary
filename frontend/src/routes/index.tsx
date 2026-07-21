@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Search,
   Plus,
@@ -6,7 +6,7 @@ import {
   Bell,
   Settings,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { initialIngredients, toneClass, type Ingredient } from "@/lib/pantry";
 
@@ -24,19 +24,64 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-const week = [
-  { day: "Mon", date: "26", meal: "Tomato Basil Pasta", emoji: "🍝", today: false },
-  { day: "Tue", date: "27", meal: "Lemon Roast Chicken", emoji: "🍗", today: true },
-  { day: "Wed", date: "28", meal: "Garden Salad Bowl", emoji: "🥗", today: false },
-  { day: "Thu", date: "29", meal: "Sourdough Pizza", emoji: "🍕", today: false },
-  { day: "Fri", date: "30", meal: "Berry Pancakes", emoji: "🥞", today: false },
-  { day: "Sat", date: "31", meal: "—", emoji: "✨", today: false },
-  { day: "Sun", date: "01", meal: "Sunday Risotto", emoji: "🍚", today: false },
-];
+interface MealPlan {
+  _id: string;
+  date: string; // YYYY-MM-DD
+  mealType: "Breakfast" | "Lunch" | "Dinner";
+  recipe: {
+    _id: string;
+    title: string;
+    emoji: string;
+  };
+}
+
+// Helpers for Week & Date calculations
+function getMonday(d: Date) {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(date.setDate(diff));
+}
+
+function formatDateISO(d: Date) {
+  return d.toISOString().split("T")[0];
+}
 
 function Index() {
   const [ingredients, setIngredients] = useState<Ingredient[]>(initialIngredients);
   const [query, setQuery] = useState("");
+  const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
+
+  // Calculate current week dates
+  const today = new Date();
+  const todayISO = formatDateISO(today);
+  const monday = getMonday(today);
+
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(monday);
+    day.setDate(monday.getDate() + i);
+    return day;
+  });
+
+  const startDateStr = formatDateISO(weekDays[0]);
+  const endDateStr = formatDateISO(weekDays[6]);
+
+  // Fetch current week's planned meals from MongoDB
+  useEffect(() => {
+    async function fetchMeals() {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/meal-plans?startDate=${startDateStr}&endDate=${endDateStr}`
+        );
+        const data = await res.json();
+        setMealPlans(data);
+      } catch (err) {
+        console.error("Error fetching dashboard meal plans:", err);
+      }
+    }
+
+    fetchMeals();
+  }, [startDateStr, endDateStr]);
 
   const addIngredient = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +94,13 @@ function Index() {
     setQuery("");
   };
 
+  // Format today's date for header (e.g. "Tuesday, Jul 21")
+  const formattedTodayHeader = today.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex max-w-[1400px] flex-col lg:flex-row">
@@ -60,7 +112,7 @@ function Index() {
           <header className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                Tuesday, May 26
+                {formattedTodayHeader}
               </p>
               <h2 className="mt-1 font-display text-2xl sm:text-3xl">
                 Good afternoon, Antonina
@@ -138,17 +190,20 @@ function Index() {
                 <h3 className="mt-2 font-display text-2xl sm:text-3xl text-[oklch(0.3_0.04_145)]">
                   Hungry? Let's see what's possible.
                 </h3>
-                <button className="mt-6 inline-flex items-center gap-2 rounded-full bg-sage px-7 py-4 text-base font-medium text-sage-foreground shadow-lg shadow-sage/20 hover:shadow-xl hover:shadow-sage/30 hover:-translate-y-0.5 transition-all">
+                <Link
+                  to="/recipes"
+                  className="mt-6 inline-flex items-center gap-2 rounded-full bg-sage px-7 py-4 text-base font-medium text-sage-foreground shadow-lg shadow-sage/20 hover:shadow-xl hover:shadow-sage/30 hover:-translate-y-0.5 transition-all"
+                >
                   <Sparkles className="h-4 w-4" />
                   What can I cook today?
-                </button>
+                </Link>
                 <p className="mt-3 text-xs text-muted-foreground">
                   Based on {ingredients.length} items in your pantry
                 </p>
               </section>
             </div>
 
-            {/* Right column: Calendar */}
+            {/* Right column: Dynamic Meal Calendar */}
             <aside className="rounded-3xl bg-card border border-border p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -157,44 +212,66 @@ function Index() {
                   </p>
                   <h3 className="mt-1 font-display text-xl">Meal Calendar</h3>
                 </div>
-                <button className="text-xs text-muted-foreground hover:text-foreground">
+                <Link
+                  to="/calendar"
+                  className="text-xs text-muted-foreground hover:text-foreground transition"
+                >
                   View all
-                </button>
+                </Link>
               </div>
 
               <div className="mt-5 space-y-2">
-                {week.map((d) => (
-                  <div
-                    key={d.day}
-                    className={`flex items-center gap-3 rounded-2xl p-3 transition ${
-                      d.today
-                        ? "bg-sage-soft"
-                        : "bg-beige/60 hover:bg-beige"
-                    }`}
-                  >
+                {weekDays.map((dObj) => {
+                  const dateISO = formatDateISO(dObj);
+                  const isToday = dateISO === todayISO;
+
+                  const dayShort = dObj.toLocaleDateString("en-US", { weekday: "short" });
+                  const dayNum = String(dObj.getDate()).padStart(2, "0");
+
+                  // Pick main planned meal for the day (Dinner > Lunch > Breakfast)
+                  const dayMeals = mealPlans.filter((m) => m.date === dateISO);
+                  const activeMeal =
+                    dayMeals.find((m) => m.mealType === "Dinner") ||
+                    dayMeals.find((m) => m.mealType === "Lunch") ||
+                    dayMeals.find((m) => m.mealType === "Breakfast");
+
+                  return (
                     <div
-                      className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${
-                        d.today
-                          ? "bg-sage text-sage-foreground"
-                          : "bg-card text-foreground"
+                      key={dateISO}
+                      className={`flex items-center gap-3 rounded-2xl p-3 transition ${
+                        isToday
+                          ? "bg-sage-soft"
+                          : "bg-beige/60 hover:bg-beige"
                       }`}
                     >
-                      <div className="text-center leading-tight">
-                        <div className="text-[10px] uppercase tracking-wider opacity-80">
-                          {d.day}
+                      <div
+                        className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${
+                          isToday
+                            ? "bg-sage text-sage-foreground"
+                            : "bg-card text-foreground"
+                        }`}
+                      >
+                        <div className="text-center leading-tight">
+                          <div className="text-[10px] uppercase tracking-wider opacity-80">
+                            {dayShort}
+                          </div>
+                          <div className="font-display text-sm">{dayNum}</div>
                         </div>
-                        <div className="font-display text-sm">{d.date}</div>
                       </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-muted-foreground">
+                          {isToday ? "Today" : "Planned"}
+                        </p>
+                        <p className="truncate text-sm font-medium">
+                          {activeMeal ? activeMeal.recipe.title : "—"}
+                        </p>
+                      </div>
+                      <span className="text-xl">
+                        {activeMeal ? activeMeal.recipe.emoji : "✨"}
+                      </span>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-muted-foreground">
-                        {d.today ? "Today" : "Planned"}
-                      </p>
-                      <p className="truncate text-sm font-medium">{d.meal}</p>
-                    </div>
-                    <span className="text-xl">{d.emoji}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </aside>
           </div>
