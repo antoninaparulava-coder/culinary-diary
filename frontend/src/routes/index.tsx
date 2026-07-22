@@ -5,10 +5,10 @@ import {
   Sparkles,
   Bell,
   Settings,
+  Trash2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/Sidebar";
-import { initialIngredients, toneClass, type Ingredient } from "@/lib/pantry";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -23,6 +23,14 @@ export const Route = createFileRoute("/")({
     ],
   }),
 });
+
+interface PantryItem {
+  _id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  category: string;
+}
 
 interface MealPlan {
   _id: string;
@@ -48,8 +56,10 @@ function formatDateISO(d: Date) {
 }
 
 function Index() {
-  const [ingredients, setIngredients] = useState<Ingredient[]>(initialIngredients);
-  const [query, setQuery] = useState("");
+  const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
+  const [nameInput, setNameInput] = useState("");
+  const [quantityInput, setQuantityInput] = useState<number>(1);
+  const [unitInput, setUnitInput] = useState("pcs");
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
 
   // Calculate current week dates
@@ -66,8 +76,21 @@ function Index() {
   const startDateStr = formatDateISO(weekDays[0]);
   const endDateStr = formatDateISO(weekDays[6]);
 
-  // Fetch current week's planned meals from MongoDB
+  // Fetch Pantry items from MongoDB
+  const fetchPantry = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/pantry");
+      const data = await res.json();
+      if (Array.isArray(data)) setPantryItems(data);
+    } catch (err) {
+      console.error("Error fetching pantry items:", err);
+    }
+  };
+
+  // Fetch current week's planned meals
   useEffect(() => {
+    fetchPantry();
+
     async function fetchMeals() {
       try {
         const res = await fetch(
@@ -83,18 +106,48 @@ function Index() {
     fetchMeals();
   }, [startDateStr, endDateStr]);
 
-  const addIngredient = (e: React.FormEvent) => {
+  // Add new ingredient to MongoDB
+  const addIngredient = async (e: React.FormEvent) => {
     e.preventDefault();
-    const name = query.trim();
+    const name = nameInput.trim();
     if (!name) return;
-    setIngredients((prev) => [
-      { name, emoji: "🍃", tone: "herb" },
-      ...prev,
-    ]);
-    setQuery("");
+
+    try {
+      const res = await fetch("http://localhost:5000/api/pantry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          quantity: Number(quantityInput) || 1,
+          unit: unitInput,
+        }),
+      });
+
+      if (res.ok) {
+        setNameInput("");
+        setQuantityInput(1);
+        fetchPantry(); // refresh list
+      }
+    } catch (err) {
+      console.error("Error adding pantry item:", err);
+    }
   };
 
-  // Format today's date for header (e.g. "Tuesday, Jul 21")
+  // Delete item when used up
+  const deleteIngredient = async (id: string) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/pantry/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setPantryItems((prev) => prev.filter((item) => item._id !== id));
+      }
+    } catch (err) {
+      console.error("Error deleting pantry item:", err);
+    }
+  };
+
+  // Format today's date for header
   const formattedTodayHeader = today.toLocaleDateString("en-US", {
     weekday: "long",
     month: "short",
@@ -104,7 +157,7 @@ function Index() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex max-w-[1400px] flex-col lg:flex-row">
-        <Sidebar pantryCount={ingredients.length} />
+        <Sidebar pantryCount={pantryItems.length} />
 
         {/* Main */}
         <main className="flex-1 px-5 py-6 sm:px-8 lg:px-10">
@@ -146,39 +199,76 @@ function Index() {
                     </h3>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {ingredients.length} ingredients
+                    {pantryItems.length} ingredients
                   </p>
                 </div>
 
-                <form onSubmit={addIngredient} className="mt-5">
-                  <div className="flex items-center gap-2 rounded-2xl border border-border bg-background px-4 py-3 focus-within:border-sage focus-within:ring-2 focus-within:ring-sage/20 transition">
+                <form onSubmit={addIngredient} className="mt-5 flex flex-wrap sm:flex-nowrap items-center gap-2">
+                  <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border bg-background px-4 py-3 focus-within:border-sage focus-within:ring-2 focus-within:ring-sage/20 transition">
                     <Search className="h-4 w-4 text-muted-foreground" />
                     <input
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value)}
                       placeholder="Add an ingredient…"
                       className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                     />
-                    <button
-                      type="submit"
-                      className="flex items-center gap-1.5 rounded-full bg-sage px-3 py-1.5 text-xs font-medium text-sage-foreground hover:opacity-90 transition"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Add
-                    </button>
                   </div>
+
+                  <input
+                    type="number"
+                    min="0.1"
+                    step="any"
+                    value={quantityInput}
+                    onChange={(e) => setQuantityInput(Number(e.target.value))}
+                    className="w-20 rounded-2xl border border-border bg-background px-3 py-3 text-sm text-center outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition"
+                  />
+
+                  <select
+                    value={unitInput}
+                    onChange={(e) => setUnitInput(e.target.value)}
+                    className="rounded-2xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition"
+                  >
+                    <option value="pcs">pcs</option>
+                    <option value="kg">kg</option>
+                    <option value="g">g</option>
+                    <option value="l">l</option>
+                    <option value="ml">ml</option>
+                    <option value="pack">pack</option>
+                    <option value="tbsp">tbsp</option>
+                  </select>
+
+                  <button
+                    type="submit"
+                    className="flex items-center gap-1.5 rounded-2xl bg-sage px-5 py-3 text-sm font-medium text-sage-foreground hover:opacity-90 transition shrink-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add
+                  </button>
                 </form>
 
+                {/* Ingredient Chips */}
                 <div className="mt-6 flex flex-wrap gap-2.5">
-                  {ingredients.map((ing, i) => (
+                  {pantryItems.map((item) => (
                     <span
-                      key={`${ing.name}-${i}`}
-                      className={`inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium ${toneClass[ing.tone]}`}
+                      key={item._id}
+                      className="group inline-flex items-center gap-2 rounded-full border border-border bg-beige/60 px-3.5 py-2 text-sm font-medium transition hover:border-sage"
                     >
-                      <span className="text-base leading-none">{ing.emoji}</span>
-                      {ing.name}
+                      <span>{item.name}</span>
+                      <span className="rounded-full bg-card px-2 py-0.5 text-xs text-muted-foreground border border-border">
+                        {item.quantity} {item.unit}
+                      </span>
+                      <button
+                        onClick={() => deleteIngredient(item._id)}
+                        className="text-muted-foreground hover:text-destructive opacity-60 hover:opacity-100 transition"
+                        title="Remove from pantry"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </span>
                   ))}
+                  {pantryItems.length === 0 && (
+                    <p className="text-sm text-muted-foreground">Your pantry is empty. Add some ingredients above!</p>
+                  )}
                 </div>
               </section>
 
@@ -198,7 +288,7 @@ function Index() {
                   What can I cook today?
                 </Link>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Based on {ingredients.length} items in your pantry
+                  Based on {pantryItems.length} items in your pantry
                 </p>
               </section>
             </div>
@@ -228,7 +318,6 @@ function Index() {
                   const dayShort = dObj.toLocaleDateString("en-US", { weekday: "short" });
                   const dayNum = String(dObj.getDate()).padStart(2, "0");
 
-                  // Pick main planned meal for the day (Dinner > Lunch > Breakfast)
                   const dayMeals = mealPlans.filter((m) => m.date === dateISO);
                   const activeMeal =
                     dayMeals.find((m) => m.mealType === "Dinner") ||
