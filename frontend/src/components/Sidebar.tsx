@@ -7,7 +7,7 @@ import {
   Sparkles,
   Gift,
 } from "lucide-react";
-import type { ComponentType } from "react";
+import { useState, useEffect, type ComponentType } from "react";
 
 type NavItem = {
   label: string;
@@ -23,10 +23,40 @@ const navItems: NavItem[] = [
   { label: "Community Challenges", to: "/challenges", icon: Trophy },
 ];
 
-export function Sidebar({ pantryCount }: { pantryCount: number }) {
+export function Sidebar({ pantryCount: propCount }: { pantryCount?: number }) {
+  const [fetchedCount, setFetchedCount] = useState<number | null>(null);
+
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
   });
+
+  useEffect(() => {
+    async function fetchPantryCount() {
+      try {
+        const res = await fetch("http://localhost:5000/api/pantry");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setFetchedCount(data.length);
+        }
+      } catch (err) {
+        // Silently catch network errors to prevent page boundary crashes
+        console.warn("Could not load pantry count for sidebar:", err);
+      }
+    }
+
+    // Initial fetch on mount & route change
+    fetchPantryCount();
+
+    // Listen for live add/delete events in the pantry
+    window.addEventListener("pantryUpdated", fetchPantryCount);
+    return () => {
+      window.removeEventListener("pantryUpdated", fetchPantryCount);
+    };
+  }, [pathname]);
+
+  // Priority: prop value first -> fetched API count second -> fallback to 0
+  const displayCount = propCount ?? fetchedCount ?? 0;
 
   return (
     <aside className="lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-card/40 backdrop-blur">
@@ -65,7 +95,7 @@ export function Sidebar({ pantryCount }: { pantryCount: number }) {
         <div className="mt-auto hidden lg:block">
           <div className="rounded-2xl bg-beige p-4">
             <p className="text-xs text-muted-foreground">Pantry items</p>
-            <p className="mt-1 font-display text-2xl">{pantryCount}</p>
+            <p className="mt-1 font-display text-2xl">{displayCount}</p>
             <p className="mt-1 text-xs text-muted-foreground">
               Fresh & ready to cook
             </p>

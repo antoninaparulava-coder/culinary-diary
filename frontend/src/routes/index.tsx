@@ -127,6 +127,9 @@ function Index() {
         setNameInput("");
         setQuantityInput(1);
         fetchPantry(); // refresh list
+        
+        // Signal the Sidebar to update its counter live!
+        window.dispatchEvent(new Event("pantryUpdated"));
       }
     } catch (err) {
       console.error("Error adding pantry item:", err);
@@ -141,6 +144,9 @@ function Index() {
       });
       if (res.ok) {
         setPantryItems((prev) => prev.filter((item) => item._id !== id));
+        
+        // Signal the Sidebar to update its counter live!
+        window.dispatchEvent(new Event("pantryUpdated"));
       }
     } catch (err) {
       console.error("Error deleting pantry item:", err);
@@ -157,7 +163,7 @@ function Index() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex max-w-[1400px] flex-col lg:flex-row">
-        <Sidebar pantryCount={pantryItems.length} />
+        <Sidebar />
 
         {/* Main */}
         <main className="flex-1 px-5 py-6 sm:px-8 lg:px-10">

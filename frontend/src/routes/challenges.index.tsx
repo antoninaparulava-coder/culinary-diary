@@ -57,7 +57,7 @@ function ChallengesPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex max-w-[1400px] flex-col lg:flex-row">
-        <Sidebar pantryCount={initialIngredients.length} />
+        <Sidebar />
 
         <main className="flex-1 px-5 py-6 sm:px-8 lg:px-10">
           <header>
