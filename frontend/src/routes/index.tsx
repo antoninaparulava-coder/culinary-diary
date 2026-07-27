@@ -36,7 +36,7 @@ interface MealPlan {
   _id: string;
   date: string; // YYYY-MM-DD
   mealType: "Breakfast" | "Lunch" | "Dinner";
-  recipe: {
+  recipe?: {
     _id: string;
     title: string;
     emoji: string;
@@ -97,7 +97,7 @@ function Index() {
           `http://localhost:5000/api/meal-plans?startDate=${startDateStr}&endDate=${endDateStr}`
         );
         const data = await res.json();
-        setMealPlans(data);
+        if (Array.isArray(data)) setMealPlans(data);
       } catch (err) {
         console.error("Error fetching dashboard meal plans:", err);
       }
@@ -324,7 +324,7 @@ function Index() {
                   const dayShort = dObj.toLocaleDateString("en-US", { weekday: "short" });
                   const dayNum = String(dObj.getDate()).padStart(2, "0");
 
-                  const dayMeals = mealPlans.filter((m) => m.date === dateISO);
+                  const dayMeals = mealPlans.filter((m) => m && m.date === dateISO);
                   const activeMeal =
                     dayMeals.find((m) => m.mealType === "Dinner") ||
                     dayMeals.find((m) => m.mealType === "Lunch") ||
@@ -358,11 +358,11 @@ function Index() {
                           {isToday ? "Today" : "Planned"}
                         </p>
                         <p className="truncate text-sm font-medium">
-                          {activeMeal ? activeMeal.recipe.title : "—"}
+                          {activeMeal?.recipe?.title || "—"}
                         </p>
                       </div>
                       <span className="text-xl">
-                        {activeMeal ? activeMeal.recipe.emoji : "✨"}
+                        {activeMeal?.recipe?.emoji || "✨"}
                       </span>
                     </div>
                   );
