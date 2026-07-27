@@ -15,6 +15,7 @@ import { Route as ChallengesRouteImport } from './routes/challenges'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChallengesIndexRouteImport } from './routes/challenges.index'
+import { Route as RecipeIdRouteImport } from './routes/recipe.$id'
 import { Route as ChallengesSlugRouteImport } from './routes/challenges.$slug'
 
 const RecipesRoute = RecipesRouteImport.update({
@@ -47,6 +48,11 @@ const ChallengesIndexRoute = ChallengesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ChallengesRoute,
 } as any)
+const RecipeIdRoute = RecipeIdRouteImport.update({
+  id: '/recipe/$id',
+  path: '/recipe/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChallengesSlugRoute = ChallengesSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/mystery-box': typeof MysteryBoxRoute
   '/recipes': typeof RecipesRoute
   '/challenges/$slug': typeof ChallengesSlugRoute
+  '/recipe/$id': typeof RecipeIdRoute
   '/challenges/': typeof ChallengesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/mystery-box': typeof MysteryBoxRoute
   '/recipes': typeof RecipesRoute
   '/challenges/$slug': typeof ChallengesSlugRoute
+  '/recipe/$id': typeof RecipeIdRoute
   '/challenges': typeof ChallengesIndexRoute
 }
 export interface FileRoutesById {
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/mystery-box': typeof MysteryBoxRoute
   '/recipes': typeof RecipesRoute
   '/challenges/$slug': typeof ChallengesSlugRoute
+  '/recipe/$id': typeof RecipeIdRoute
   '/challenges/': typeof ChallengesIndexRoute
 }
 export interface FileRouteTypes {
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/mystery-box'
     | '/recipes'
     | '/challenges/$slug'
+    | '/recipe/$id'
     | '/challenges/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/mystery-box'
     | '/recipes'
     | '/challenges/$slug'
+    | '/recipe/$id'
     | '/challenges'
   id:
     | '__root__'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/mystery-box'
     | '/recipes'
     | '/challenges/$slug'
+    | '/recipe/$id'
     | '/challenges/'
   fileRoutesById: FileRoutesById
 }
@@ -115,6 +127,7 @@ export interface RootRouteChildren {
   ChallengesRoute: typeof ChallengesRouteWithChildren
   MysteryBoxRoute: typeof MysteryBoxRoute
   RecipesRoute: typeof RecipesRoute
+  RecipeIdRoute: typeof RecipeIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -161,6 +174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChallengesIndexRouteImport
       parentRoute: typeof ChallengesRoute
     }
+    '/recipe/$id': {
+      id: '/recipe/$id'
+      path: '/recipe/$id'
+      fullPath: '/recipe/$id'
+      preLoaderRoute: typeof RecipeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/challenges/$slug': {
       id: '/challenges/$slug'
       path: '/$slug'
@@ -191,6 +211,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChallengesRoute: ChallengesRouteWithChildren,
   MysteryBoxRoute: MysteryBoxRoute,
   RecipesRoute: RecipesRoute,
+  RecipeIdRoute: RecipeIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

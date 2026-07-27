@@ -4,8 +4,10 @@ const cors = require('cors');
 
 const recipeRoutes = require('./routes/recipeRoutes');
 const mealPlanRoutes = require('./routes/mealPlanRoutes');
-const Pantry = require("./models/Pantry");
 
+// Models
+const Pantry = require("./models/Pantry");
+const Recipe = require("./models/Recipe");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -17,6 +19,7 @@ app.use(express.json());
 app.use('/api/recipes', recipeRoutes);
 app.use('/api/meal-plans', mealPlanRoutes);
 
+// Pantry Endpoints
 app.get("/api/pantry", async (req, res) => {
   try {
     const items = await Pantry.find().sort({ createdAt: -1 });
@@ -45,13 +48,33 @@ app.post("/api/pantry", async (req, res) => {
   }
 });
 
-// DELETE: Remove an ingredient by ID (when used up)
+// DELETE: Remove an ingredient by ID
 app.delete("/api/pantry/:id", async (req, res) => {
   try {
     await Pantry.findByIdAndDelete(req.params.id);
     res.json({ message: "Ingredient removed from pantry" });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// GET: Single Recipe Details
+app.get("/api/recipes/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check for valid MongoDB ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: "Invalid recipe ID format" });
+    }
+
+    const recipe = await Recipe.findById(id);
+    if (!recipe) {
+      return res.status(404).json({ message: "Recipe not found" });
+    }
+    res.json(recipe);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

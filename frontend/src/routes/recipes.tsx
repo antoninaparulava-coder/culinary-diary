@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Search, SlidersHorizontal, Clock, Flame, ChefHat } from "lucide-react";
+import { Search, SlidersHorizontal, Clock, Flame, ChefHat, Utensils } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { initialIngredients } from "@/lib/pantry";
+import { Link } from "@tanstack/react-router";
 
 // ვქმნით ინტერფეისს ჩვენი ბექენდის მონაცემებისთვის
 interface BackendRecipe {
@@ -75,7 +76,6 @@ function RecipesPage() {
       q ? recipe.title.toLowerCase().includes(q) : true
     );
 
-    // სორტირება ფილტრების მიხედვით
     // სორტირება ფილტრების მიხედვით
     if (activeFilter === "time") {
       filteredList.sort((a, b) => a.recipe.prepTime - b.recipe.prepTime);
@@ -165,32 +165,34 @@ function RecipesPage() {
               filtered.map(({ recipe, score }) => (
                 <article
                   key={recipe._id}
-                  className="group flex flex-col rounded-3xl border border-border bg-card p-5 hover:border-sage/50 hover:shadow-lg hover:shadow-sage/5 transition-all"
+                  className="group flex flex-col justify-between rounded-3xl border border-border bg-card p-5 hover:border-sage/50 hover:shadow-lg hover:shadow-sage/5 transition-all"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="text-3xl">{recipe.emoji}</span> {/* დროებითი ემოჯი ბაზის რეცეპტებისთვის */}
-                    <span className="inline-flex items-center gap-1 rounded-full bg-beige px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      {recipe.prepTime} min
-                    </span>
-                  </div>
-
-                  <h3 className="mt-3 font-display text-lg leading-tight">
-                    {recipe.title}
-                  </h3>
-                  <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2">
-                    {recipe.blurb || recipe.instructions}
-                  </p>
-
-                  <div className="mt-4 flex flex-wrap gap-1.5">
-                    {recipe.tags?.map((t) => (
-                      <span
-                        key={t}
-                        className="rounded-full bg-sage-soft px-2.5 py-0.5 text-[11px] font-medium text-[oklch(0.35_0.06_145)]"
-                      >
-                        {t}
+                  <div>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-3xl">{recipe.emoji}</span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-beige px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {recipe.prepTime} min
                       </span>
-                    ))}
+                    </div>
+
+                    <h3 className="mt-3 font-display text-lg leading-tight">
+                      {recipe.title}
+                    </h3>
+                    <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2">
+                      {recipe.blurb || recipe.instructions}
+                    </p>
+
+                    <div className="mt-4 flex flex-wrap gap-1.5">
+                      {recipe.tags?.map((t) => (
+                        <span
+                          key={t}
+                          className="rounded-full bg-sage-soft px-2.5 py-0.5 text-[11px] font-medium text-[oklch(0.35_0.06_145)]"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="mt-5 border-t border-border pt-4">
@@ -204,6 +206,16 @@ function RecipesPage() {
                         style={{ width: `${score}%` }}
                       />
                     </div>
+
+                    {/* HERE IS THE VIEW INGREDIENTS BUTTON */}
+                    <Link
+                      to="/recipe/$id"
+                      params={{ id: recipe._id }}
+                      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-sage/10 py-2.5 text-xs font-medium text-sage hover:bg-sage hover:text-sage-foreground transition"
+                    >
+                      <Utensils className="h-3.5 w-3.5" />
+                      View Ingredients
+                    </Link>
                   </div>
                 </article>
               ))

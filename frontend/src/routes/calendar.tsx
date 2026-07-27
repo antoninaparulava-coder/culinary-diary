@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, X, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/Sidebar";
-import { initialIngredients } from "@/lib/pantry";
 
 export const Route = createFileRoute("/calendar")({
   component: CalendarPage,
@@ -49,6 +48,7 @@ function CalendarPage() {
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<{ date: string; mealType: Slot } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Generate 7 days starting from current Monday
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -103,12 +103,18 @@ function CalendarPage() {
 
       if (res.ok) {
         setSelectedSlot(null);
+        setSearchQuery("");
         fetchCalendarData();
       }
     } catch (err) {
       console.error("Error assigning meal:", err);
     }
   };
+
+  // Filter recipes based on modal search query
+  const filteredRecipes = recipes.filter((recipe) =>
+    recipe.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const todayStr = formatDateISO(new Date());
 
@@ -210,7 +216,10 @@ function CalendarPage() {
                             </p>
                           ) : (
                             <button
-                              onClick={() => setSelectedSlot({ date: dateISO, mealType: slot })}
+                              onClick={() => {
+                                setSearchQuery("");
+                                setSelectedSlot({ date: dateISO, mealType: slot });
+                              }}
                               className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-sage transition"
                             >
                               <Plus className="h-3 w-3" /> Add meal
@@ -234,7 +243,10 @@ function CalendarPage() {
                     Select {selectedSlot.mealType}
                   </h3>
                   <button
-                    onClick={() => setSelectedSlot(null)}
+                    onClick={() => {
+                      setSelectedSlot(null);
+                      setSearchQuery("");
+                    }}
                     className="p-1 text-muted-foreground hover:text-foreground"
                   >
                     <X className="h-5 w-5" />
@@ -244,17 +256,36 @@ function CalendarPage() {
                   Choose a recipe for {selectedSlot.date}:
                 </p>
 
-                <div className="mt-4 max-h-60 overflow-y-auto flex flex-col gap-2 pr-1">
-                  {recipes.map((r) => (
-                    <button
-                      key={r._id}
-                      onClick={() => handleAssignRecipe(r._id)}
-                      className="flex items-center justify-between rounded-xl border border-border p-3 hover:bg-sage/10 transition text-left"
-                    >
-                      <span className="text-sm font-medium">{r.title}</span>
-                      <span className="text-lg">{r.emoji}</span>
-                    </button>
-                  ))}
+                {/* Search Bar */}
+                <div className="relative mt-4 mb-3">
+                  <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Search recipes..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full rounded-2xl border border-border bg-background pl-10 pr-4 py-2.5 text-sm outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition"
+                  />
+                </div>
+
+                {/* Filtered Recipe List */}
+                <div className="max-h-60 overflow-y-auto flex flex-col gap-2 pr-1">
+                  {filteredRecipes.length > 0 ? (
+                    filteredRecipes.map((r) => (
+                      <button
+                        key={r._id}
+                        onClick={() => handleAssignRecipe(r._id)}
+                        className="flex items-center justify-between rounded-xl border border-border p-3 hover:bg-sage/10 transition text-left"
+                      >
+                        <span className="text-sm font-medium">{r.title}</span>
+                        <span className="text-lg">{r.emoji}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="py-6 text-center text-xs text-muted-foreground">
+                      No recipes found matching "{searchQuery}"
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
