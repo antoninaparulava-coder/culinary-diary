@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, ChevronLeft, ChevronRight, X, Search } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, X, Search, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/Sidebar";
 
@@ -70,8 +70,8 @@ function CalendarPage() {
       const dataPlans = await resPlans.json();
       const dataRecipes = await resRecipes.json();
 
-      setMealPlans(dataPlans);
-      setRecipes(dataRecipes);
+      if (Array.isArray(dataPlans)) setMealPlans(dataPlans);
+      if (Array.isArray(dataRecipes)) setRecipes(dataRecipes);
     } catch (err) {
       console.error("Error fetching calendar data:", err);
     }
@@ -90,6 +90,14 @@ function CalendarPage() {
   const handleAssignRecipe = async (recipeId: string) => {
     if (!selectedSlot) return;
 
+    // Find full recipe object from current recipes state
+    const selectedRecipe = recipes.find((r) => r._id === recipeId);
+
+    if (!selectedRecipe) {
+      console.error("Selected recipe not found in state");
+      return;
+    }
+
     try {
       const res = await fetch("http://localhost:5000/api/meal-plans", {
         method: "POST",
@@ -97,7 +105,11 @@ function CalendarPage() {
         body: JSON.stringify({
           date: selectedSlot.date,
           mealType: selectedSlot.mealType,
-          recipeId,
+          recipe: {
+            _id: selectedRecipe._id,
+            title: selectedRecipe.title,
+            emoji: selectedRecipe.emoji || "🍳",
+          },
         }),
       });
 
@@ -108,6 +120,21 @@ function CalendarPage() {
       }
     } catch (err) {
       console.error("Error assigning meal:", err);
+    }
+  };
+
+  // DELETE handler to remove a meal plan from MongoDB
+  const handleDeleteMeal = async (mealPlanId: string) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/meal-plans/${mealPlanId}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        fetchCalendarData(); // refresh the calendar after deletion
+      }
+    } catch (err) {
+      console.error("Error deleting meal:", err);
     }
   };
 
@@ -200,19 +227,31 @@ function CalendarPage() {
                       return (
                         <div
                           key={slot}
-                          className={`rounded-2xl p-3 text-left transition ${
+                          className={`group relative rounded-2xl p-3 text-left transition ${
                             meal
                               ? "bg-beige/70"
                               : "border border-dashed border-border bg-transparent hover:bg-beige/40"
                           }`}
                         >
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                            {slot}
-                          </p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                              {slot}
+                            </p>
+                            {mealPlan && (
+                              <button
+                                onClick={() => handleDeleteMeal(mealPlan._id)}
+                                className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition"
+                                title="Delete meal"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+
                           {meal ? (
                             <p className="mt-1 flex items-center gap-1.5 text-sm font-medium leading-snug">
-                              <span>{meal.emoji}</span>
-                              <span className="truncate">{meal.title}</span>
+                              <span>{meal.emoji || "🍳"}</span>
+                              <span className="truncate">{meal.title || "Untitled Meal"}</span>
                             </p>
                           ) : (
                             <button

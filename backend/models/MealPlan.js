@@ -11,9 +11,9 @@ const mealPlanSchema = new mongoose.Schema({
     required: true,
   },
   recipe: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Recipe', // References the Recipe model
-    required: true,
+    _id: { type: String },
+    title: { type: String, required: true },
+    emoji: { type: String, default: "🍳" },
   },
 }, { timestamps: true });
 

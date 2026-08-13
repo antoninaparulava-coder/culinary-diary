@@ -12,6 +12,7 @@ router.get('/', async (req, res) => {
       query.date = { $gte: startDate, $lte: endDate };
     }
 
+    // .populate('recipe') replaces the ObjectId with the actual Recipe document
     const mealPlans = await MealPlan.find(query).populate('recipe');
     res.json(mealPlans);
   } catch (error) {
@@ -21,12 +22,12 @@ router.get('/', async (req, res) => {
 
 // POST or UPDATE a meal slot
 router.post('/', async (req, res) => {
-  const { date, mealType, recipeId } = req.body;
+  const { date, mealType, recipe } = req.body;
 
   try {
     const updatedMealPlan = await MealPlan.findOneAndUpdate(
       { date, mealType },
-      { recipe: recipeId },
+      { recipe },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     ).populate('recipe');
 

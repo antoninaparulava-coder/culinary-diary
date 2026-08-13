@@ -31,7 +31,7 @@ export const Route = createFileRoute("/recipes")({
 
 type FilterKey = "time" | "calories" | "difficulty";
 
-// ლოგიკა, რომელიც ითვლის თუ რამდენი პროცენტით ემთხვევა მაცივრის ინგრედიენტები რეცეპტს
+// Logic that calculates the percentage of ingredients in the refrigerator that match the recipe
 function matchScore(recipeIngredients: string[], pantry: Set<string>) {
   if (recipeIngredients.length === 0) return 0;
   const matched = recipeIngredients.filter((ing) => pantry.has(ing)).length;
@@ -71,12 +71,12 @@ function RecipesPage() {
       score: matchScore(r.ingredients, pantrySet)
     }));
 
-    // ფილტრაცია ძებნის მიხედვით
+    // FILTRATION BY SEARCH
     const filteredList = list.filter(({ recipe }) =>
       q ? recipe.title.toLowerCase().includes(q) : true
     );
 
-    // სორტირება ფილტრების მიხედვით
+    // SORTING BY FILTERS
     if (activeFilter === "time") {
       filteredList.sort((a, b) => a.recipe.prepTime - b.recipe.prepTime);
     } else if (activeFilter === "calories") {
@@ -207,7 +207,7 @@ function RecipesPage() {
                       />
                     </div>
 
-                    {/* HERE IS THE VIEW INGREDIENTS BUTTON */}
+                    {/*THE VIEW INGREDIENTS BUTTON */}
                     <Link
                       to="/recipe/$id"
                       params={{ id: recipe._id }}
