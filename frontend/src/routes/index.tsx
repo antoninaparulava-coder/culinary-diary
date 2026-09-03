@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/Sidebar";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -56,6 +57,8 @@ function formatDateISO(d: Date) {
 }
 
 function Index() {
+  const { user, loading } = useAuth();
+
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
   const [nameInput, setNameInput] = useState("");
   const [quantityInput, setQuantityInput] = useState<number>(1);
@@ -174,7 +177,7 @@ function Index() {
                 {formattedTodayHeader}
               </p>
               <h2 className="mt-1 font-display text-2xl sm:text-3xl">
-                Good afternoon, Antonina
+                Good afternoon, {user?.firstName}
               </h2>
             </div>
             <div className="flex items-center gap-2">
@@ -185,7 +188,7 @@ function Index() {
                 <Settings className="h-4 w-4" />
               </button>
               <div className="grid h-10 w-10 place-items-center rounded-full bg-sage text-sage-foreground font-medium text-sm">
-                A
+                {user?.firstName?.charAt(0).toUpperCase()}
               </div>
             </div>
           </header>
