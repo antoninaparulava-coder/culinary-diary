@@ -9,8 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as RecipesRouteImport } from './routes/recipes'
 import { Route as MysteryBoxRouteImport } from './routes/mystery-box'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ChallengesRouteImport } from './routes/challenges'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
@@ -18,6 +20,11 @@ import { Route as ChallengesIndexRouteImport } from './routes/challenges.index'
 import { Route as RecipeIdRouteImport } from './routes/recipe.$id'
 import { Route as ChallengesSlugRouteImport } from './routes/challenges.$slug'
 
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecipesRoute = RecipesRouteImport.update({
   id: '/recipes',
   path: '/recipes',
@@ -26,6 +33,11 @@ const RecipesRoute = RecipesRouteImport.update({
 const MysteryBoxRoute = MysteryBoxRouteImport.update({
   id: '/mystery-box',
   path: '/mystery-box',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChallengesRoute = ChallengesRouteImport.update({
@@ -63,8 +75,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/challenges': typeof ChallengesRouteWithChildren
+  '/login': typeof LoginRoute
   '/mystery-box': typeof MysteryBoxRoute
   '/recipes': typeof RecipesRoute
+  '/signup': typeof SignupRoute
   '/challenges/$slug': typeof ChallengesSlugRoute
   '/recipe/$id': typeof RecipeIdRoute
   '/challenges/': typeof ChallengesIndexRoute
@@ -72,8 +86,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
+  '/login': typeof LoginRoute
   '/mystery-box': typeof MysteryBoxRoute
   '/recipes': typeof RecipesRoute
+  '/signup': typeof SignupRoute
   '/challenges/$slug': typeof ChallengesSlugRoute
   '/recipe/$id': typeof RecipeIdRoute
   '/challenges': typeof ChallengesIndexRoute
@@ -83,8 +99,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/challenges': typeof ChallengesRouteWithChildren
+  '/login': typeof LoginRoute
   '/mystery-box': typeof MysteryBoxRoute
   '/recipes': typeof RecipesRoute
+  '/signup': typeof SignupRoute
   '/challenges/$slug': typeof ChallengesSlugRoute
   '/recipe/$id': typeof RecipeIdRoute
   '/challenges/': typeof ChallengesIndexRoute
@@ -95,8 +113,10 @@ export interface FileRouteTypes {
     | '/'
     | '/calendar'
     | '/challenges'
+    | '/login'
     | '/mystery-box'
     | '/recipes'
+    | '/signup'
     | '/challenges/$slug'
     | '/recipe/$id'
     | '/challenges/'
@@ -104,8 +124,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/calendar'
+    | '/login'
     | '/mystery-box'
     | '/recipes'
+    | '/signup'
     | '/challenges/$slug'
     | '/recipe/$id'
     | '/challenges'
@@ -114,8 +136,10 @@ export interface FileRouteTypes {
     | '/'
     | '/calendar'
     | '/challenges'
+    | '/login'
     | '/mystery-box'
     | '/recipes'
+    | '/signup'
     | '/challenges/$slug'
     | '/recipe/$id'
     | '/challenges/'
@@ -125,13 +149,22 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalendarRoute: typeof CalendarRoute
   ChallengesRoute: typeof ChallengesRouteWithChildren
+  LoginRoute: typeof LoginRoute
   MysteryBoxRoute: typeof MysteryBoxRoute
   RecipesRoute: typeof RecipesRoute
+  SignupRoute: typeof SignupRoute
   RecipeIdRoute: typeof RecipeIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/recipes': {
       id: '/recipes'
       path: '/recipes'
@@ -144,6 +177,13 @@ declare module '@tanstack/react-router' {
       path: '/mystery-box'
       fullPath: '/mystery-box'
       preLoaderRoute: typeof MysteryBoxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/challenges': {
@@ -209,8 +249,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalendarRoute: CalendarRoute,
   ChallengesRoute: ChallengesRouteWithChildren,
+  LoginRoute: LoginRoute,
   MysteryBoxRoute: MysteryBoxRoute,
   RecipesRoute: RecipesRoute,
+  SignupRoute: SignupRoute,
   RecipeIdRoute: RecipeIdRoute,
 }
 export const routeTree = rootRouteImport
