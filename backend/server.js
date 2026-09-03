@@ -1,39 +1,74 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+require("dotenv").config();
 
-const recipeRoutes = require('./routes/recipeRoutes');
-const mealPlanRoutes = require('./routes/mealPlanRoutes');
+const recipeRoutes = require("./routes/recipeRoutes");
+const mealPlanRoutes = require("./routes/mealPlanRoutes");
+const authRoutes = require("./routes/authRoutes");
 
 // Models
 const Pantry = require("./models/Pantry");
 const Recipe = require("./models/Recipe");
+
 const app = express();
+
 const PORT = process.env.PORT || 5000;
 
+
+// ==========================
 // Middleware
-app.use(cors());
+// ==========================
+
+app.use(
+  cors({
+    origin: "http://localhost:8080",
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
-// Routes
-app.use('/api/recipes', recipeRoutes);
-app.use('/api/meal-plans', mealPlanRoutes);
+app.use(cookieParser());
 
+
+// ==========================
+// Routes
+// ==========================
+
+app.use("/api/auth", authRoutes);
+
+app.use("/api/recipes", recipeRoutes);
+
+app.use("/api/meal-plans", mealPlanRoutes);
+
+
+// ==========================
 // Pantry Endpoints
+// ==========================
+
+// GET pantry
 app.get("/api/pantry", async (req, res) => {
   try {
-    const items = await Pantry.find().sort({ createdAt: -1 });
+    const items = await Pantry.find().sort({
+      createdAt: -1,
+    });
+
     res.json(items);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({
+      message: err.message,
+    });
   }
 });
 
-// POST: Add a new ingredient
+
+// POST pantry item
 app.post("/api/pantry", async (req, res) => {
   try {
     const { name, quantity, unit, category } = req.body;
-    
+
     const newItem = new Pantry({
       name,
       quantity: quantity || 1,
@@ -42,47 +77,76 @@ app.post("/api/pantry", async (req, res) => {
     });
 
     const savedItem = await newItem.save();
+
     res.status(201).json(savedItem);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(400).json({
+      message: err.message,
+    });
   }
 });
 
-// DELETE: Remove an ingredient by ID
+
+// DELETE pantry item
 app.delete("/api/pantry/:id", async (req, res) => {
   try {
     await Pantry.findByIdAndDelete(req.params.id);
-    res.json({ message: "Ingredient removed from pantry" });
+
+    res.json({
+      message: "Ingredient removed from pantry",
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({
+      message: err.message,
+    });
   }
 });
 
-// GET: Single Recipe Details
+
+// ==========================
+// Single Recipe
+// ==========================
+
 app.get("/api/recipes/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check for valid MongoDB ObjectId format
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(404).json({ message: "Invalid recipe ID format" });
+      return res.status(404).json({
+        message: "Invalid recipe ID format",
+      });
     }
 
     const recipe = await Recipe.findById(id);
+
     if (!recipe) {
-      return res.status(404).json({ message: "Recipe not found" });
+      return res.status(404).json({
+        message: "Recipe not found",
+      });
     }
+
     res.json(recipe);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      error: err.message,
+    });
   }
 });
 
+
+// ==========================
 // MongoDB Connection
+// ==========================
+
 mongoose
-  .connect('mongodb://127.0.0.1:27017/culinary_diary')
+  .connect("mongodb://127.0.0.1:27017/culinary_diary")
   .then(() => {
-    console.log('Connected to MongoDB');
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    console.log("Connected to MongoDB");
+
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
   })
-  .catch((err) => console.error('MongoDB connection error:', err));
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+  });
