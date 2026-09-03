@@ -177,7 +177,7 @@ function Index() {
                 {formattedTodayHeader}
               </p>
               <h2 className="mt-1 font-display text-2xl sm:text-3xl">
-                Good afternoon, {user?.firstName}
+                Hello {user?.firstName}
               </h2>
             </div>
             <div className="flex items-center gap-2">

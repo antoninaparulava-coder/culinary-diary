@@ -1,3 +1,5 @@
+const requireAuth = require("../middleware/auth");
+
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -142,19 +144,9 @@ router.post("/login", async (req, res) => {
 // ==========================
 // CURRENT USER
 // ==========================
-router.get("/me", async (req, res) => {
+router.get("/me", requireAuth, async (req, res) => {
   try {
-    const token = req.cookies.token;
-
-    if (!token) {
-      return res.status(401).json({
-        message: "Not authenticated.",
-      });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    const user = await User.findById(decoded.userId).select("-password");
+    const user = await User.findById(req.userId).select("-password");
 
     if (!user) {
       return res.status(401).json({
@@ -169,8 +161,10 @@ router.get("/me", async (req, res) => {
       email: user.email,
     });
   } catch (error) {
-    return res.status(401).json({
-      message: "Not authenticated.",
+    console.error("Get current user error:", error);
+
+    res.status(500).json({
+      message: "Something went wrong.",
     });
   }
 });
