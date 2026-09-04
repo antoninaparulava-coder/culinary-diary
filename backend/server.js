@@ -7,6 +7,7 @@ require("dotenv").config();
 const recipeRoutes = require("./routes/recipeRoutes");
 const mealPlanRoutes = require("./routes/mealPlanRoutes");
 const authRoutes = require("./routes/authRoutes");
+const requireAuth = require("./middleware/auth");
 
 // Models
 const Pantry = require("./models/Pantry");
@@ -49,9 +50,11 @@ app.use("/api/meal-plans", mealPlanRoutes);
 // ==========================
 
 // GET pantry
-app.get("/api/pantry", async (req, res) => {
+app.get("/api/pantry", requireAuth, async (req, res) => {
   try {
-    const items = await Pantry.find().sort({
+    const items = await Pantry.find({
+      userId: req.userId,
+    }).sort({
       createdAt: -1,
     });
 
@@ -65,11 +68,12 @@ app.get("/api/pantry", async (req, res) => {
 
 
 // POST pantry item
-app.post("/api/pantry", async (req, res) => {
+app.post("/api/pantry", requireAuth, async (req, res) => {
   try {
     const { name, quantity, unit, category } = req.body;
 
     const newItem = new Pantry({
+      userId: req.userId,
       name,
       quantity: quantity || 1,
       unit: unit || "pcs",
@@ -88,9 +92,18 @@ app.post("/api/pantry", async (req, res) => {
 
 
 // DELETE pantry item
-app.delete("/api/pantry/:id", async (req, res) => {
+app.delete("/api/pantry/:id", requireAuth, async (req, res) => {
   try {
-    await Pantry.findByIdAndDelete(req.params.id);
+    const deletedItem = await Pantry.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.userId,
+    });
+
+    if (!deletedItem) {
+      return res.status(404).json({
+        message: "Ingredient not found.",
+      });
+    }
 
     res.json({
       message: "Ingredient removed from pantry",
