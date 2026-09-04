@@ -6,6 +6,7 @@ import {
   Trophy,
   Sparkles,
   Gift,
+  LogOut,
 } from "lucide-react";
 import { useState, useEffect, type ComponentType } from "react";
 
@@ -58,6 +59,23 @@ export function Sidebar({ pantryCount: propCount }: { pantryCount?: number }) {
   // Priority: prop value first -> fetched API count second -> fallback to 0
   const displayCount = propCount ?? fetchedCount ?? 0;
 
+    async function handleLogout() {
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Logout failed");
+      }
+
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  }
+
   return (
     <aside className="lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-card/40 backdrop-blur">
       <div className="flex h-full flex-col p-5">
@@ -100,6 +118,14 @@ export function Sidebar({ pantryCount: propCount }: { pantryCount?: number }) {
               Fresh & ready to cook
             </p>
           </div>
+
+           <button
+              onClick={handleLogout}
+              className="mt-3 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-beige hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+            </button>
         </div>
       </div>
     </aside>

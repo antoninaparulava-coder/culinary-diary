@@ -82,9 +82,15 @@ function Index() {
   // Fetch Pantry items from MongoDB
   const fetchPantry = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/pantry");
+      const res = await fetch("http://localhost:5000/api/pantry", {
+        credentials: "include",
+      });
+
       const data = await res.json();
-      if (Array.isArray(data)) setPantryItems(data);
+
+      if (Array.isArray(data)) {
+        setPantryItems(data);
+      }
     } catch (err) {
       console.error("Error fetching pantry items:", err);
     }
@@ -97,8 +103,11 @@ function Index() {
     async function fetchMeals() {
       try {
         const res = await fetch(
-          `http://localhost:5000/api/meal-plans?startDate=${startDateStr}&endDate=${endDateStr}`
-        );
+          `http://localhost:5000/api/meal-plans?startDate=${startDateStr}&endDate=${endDateStr}`,
+          {
+            credentials: "include",
+          }
+          );
         const data = await res.json();
         if (Array.isArray(data)) setMealPlans(data);
       } catch (err) {
@@ -118,13 +127,16 @@ function Index() {
     try {
       const res = await fetch("http://localhost:5000/api/pantry", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           name,
           quantity: Number(quantityInput) || 1,
           unit: unitInput,
         }),
-      });
+      });      
 
       if (res.ok) {
         setNameInput("");
@@ -144,6 +156,7 @@ function Index() {
     try {
       const res = await fetch(`http://localhost:5000/api/pantry/${id}`, {
         method: "DELETE",
+        credentials: "include",
       });
       if (res.ok) {
         setPantryItems((prev) => prev.filter((item) => item._id !== id));
@@ -162,6 +175,21 @@ function Index() {
     month: "short",
     day: "numeric",
   });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-sm text-muted-foreground">
+          Loading your kitchen...
+        </p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    window.location.href = "/login";
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
