@@ -64,8 +64,13 @@ function CalendarPage() {
   const fetchCalendarData = async () => {
     try {
       const [resPlans, resRecipes] = await Promise.all([
-        fetch(`http://localhost:5000/api/meal-plans?startDate=${startDateStr}&endDate=${endDateStr}`),
-        fetch(`http://localhost:5000/api/recipes`),
+      fetch(
+        `http://localhost:5000/api/meal-plans?startDate=${startDateStr}&endDate=${endDateStr}`,
+        {
+          credentials: "include",
+        }
+      ),
+      fetch(`http://localhost:5000/api/recipes`),
       ]);
       const dataPlans = await resPlans.json();
       const dataRecipes = await resRecipes.json();
@@ -101,6 +106,7 @@ function CalendarPage() {
     try {
       const res = await fetch("http://localhost:5000/api/meal-plans", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: selectedSlot.date,
@@ -128,6 +134,7 @@ function CalendarPage() {
     try {
       const res = await fetch(`http://localhost:5000/api/meal-plans/${mealPlanId}`, {
         method: "DELETE",
+        credentials: "include",
       });
 
       if (res.ok) {

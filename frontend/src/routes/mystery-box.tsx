@@ -69,22 +69,37 @@ function MysteryBoxPage() {
   // Fetch data from database
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const [resRecipes, resPantry] = await Promise.all([
-          fetch("http://localhost:5000/api/recipes"),
-          fetch("http://localhost:5000/api/pantry"),
-        ]);
+    try {
+      const [resRecipes, resPantry] = await Promise.all([
+        fetch("http://localhost:5000/api/recipes"),
+        fetch("http://localhost:5000/api/pantry", {
+          credentials: "include",
+        }),
+      ]);
 
-        const dataRecipes = await resRecipes.json();
-        const dataPantry = await resPantry.json();
-
-        if (Array.isArray(dataRecipes)) setRecipes(dataRecipes);
-        if (Array.isArray(dataPantry)) setPantryItems(dataPantry);
-      } catch (err) {
-        console.error("Error fetching data for mystery box:", err);
-      } finally {
-        setLoading(false);
+      if (!resRecipes.ok) {
+        throw new Error("Failed to fetch recipes");
       }
+
+      if (!resPantry.ok) {
+        throw new Error("Failed to fetch pantry");
+      }
+
+      const dataRecipes = await resRecipes.json();
+      const dataPantry = await resPantry.json();
+
+      if (Array.isArray(dataRecipes)) {
+        setRecipes(dataRecipes);
+      }
+
+      if (Array.isArray(dataPantry)) {
+        setPantryItems(dataPantry);
+      }
+    } catch (err) {
+      console.error("Error fetching data for mystery box:", err);
+    } finally {
+      setLoading(false);
+    }
     };
 
     fetchData();

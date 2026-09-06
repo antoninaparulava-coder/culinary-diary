@@ -1,19 +1,31 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const MealPlan = require('../models/MealPlan');
 
-// GET meal plans (supports query params: ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD)
-router.get('/', async (req, res) => {
+const MealPlan = require("../models/MealPlan");
+const requireAuth = require("../middleware/auth");
+
+// GET meal plans
+// Supports: ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+router.get("/", requireAuth, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    let query = {};
+
+    const query = {
+      userId: req.userId,
+    };
 
     if (startDate && endDate) {
-      query.date = { $gte: startDate, $lte: endDate };
+      query.date = {
+        $gte: startDate,
+        $lte: endDate,
+      };
     }
 
-    // .populate('recipe') replaces the ObjectId with the actual Recipe document
-    const mealPlans = await MealPlan.find(query).populate('recipe');
+    const mealPlans = await MealPlan.find(query).sort({
+      date: 1,
+      mealType: 1,
+    });
+
     res.json(mealPlans);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -21,15 +33,26 @@ router.get('/', async (req, res) => {
 });
 
 // POST or UPDATE a meal slot
-router.post('/', async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   const { date, mealType, recipe } = req.body;
 
   try {
     const updatedMealPlan = await MealPlan.findOneAndUpdate(
-      { date, mealType },
-      { recipe },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
-    ).populate('recipe');
+      {
+        userId: req.userId,
+        date,
+        mealType,
+      },
+      {
+        userId: req.userId,
+        recipe,
+      },
+      {
+        new: true,
+        upsert: true,
+        setDefaultsOnInsert: true,
+      }
+    );
 
     res.status(201).json(updatedMealPlan);
   } catch (error) {
@@ -38,10 +61,20 @@ router.post('/', async (req, res) => {
 });
 
 // DELETE a meal from calendar
-router.delete('/:id', async (req, res) => {
+router.delete("/:id", requireAuth, async (req, res) => {
   try {
-    await MealPlan.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Meal removed from calendar' });
+    const deletedMealPlan = await MealPlan.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.userId,
+    });
+
+    if (!deletedMealPlan) {
+      return res.status(404).json({
+        message: "Meal plan not found.",
+      });
+    }
+
+    res.json({ message: "Meal removed from calendar" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
