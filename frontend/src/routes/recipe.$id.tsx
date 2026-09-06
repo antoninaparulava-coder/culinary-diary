@@ -37,7 +37,9 @@ function RecipeDetailPage() {
         setLoading(true);
         const [resRecipe, resPantry] = await Promise.all([
           fetch(`http://localhost:5000/api/recipes/${id}`),
-          fetch(`http://localhost:5000/api/pantry`),
+          fetch(`http://localhost:5000/api/pantry`, {
+            credentials: "include",
+          }),
         ]);
 
         if (!resRecipe.ok) throw new Error("Failed to load recipe details");

@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Search, SlidersHorizontal, Clock, Flame, ChefHat, Utensils } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { Sidebar } from "@/components/Sidebar";
-import { initialIngredients } from "@/lib/pantry";
 import { Link } from "@tanstack/react-router";
 
 // ვქმნით ინტერფეისს ჩვენი ბექენდის მონაცემებისთვის
@@ -40,28 +39,48 @@ function matchScore(recipeIngredients: string[], pantry: Set<string>) {
 
 function RecipesPage() {
   const [dbRecipes, setDbRecipes] = useState<BackendRecipe[]>([]);
+  const [pantryItems, setPantryItems] = useState<{ name: string }[]>([]);
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterKey | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    async function fetchData() {  
+    try {
+      const [resRecipes, resPantry] = await Promise.all([
+        fetch("http://localhost:5000/api/recipes"),
+        fetch("http://localhost:5000/api/pantry", {
+          credentials: "include",
+        }),
+      ]);
+
+      if (!resRecipes.ok) {
+        throw new Error("Failed to load recipes");
+      }
+
+      if (!resPantry.ok) {
+        throw new Error("Failed to load pantry");
+      }
+
+      const recipesData = await resRecipes.json();
+      const pantryData = await resPantry.json();
+
+      setDbRecipes(recipesData);
+      setPantryItems(Array.isArray(pantryData) ? pantryData : []);
+    } catch (err) {
+      console.error("Error fetching recipes and pantry:", err);
+    } finally {
+      setLoading(false);
+    }
+    }
+
+    fetchData();
+  }, []);
 
   const pantrySet = useMemo(
-    () => new Set(initialIngredients.map((i) => i.name)),
-    [],
+    () => new Set(pantryItems.map((item) => item.name)),
+    [pantryItems],
   );
-
-  // ბექენდიდან რეცეპტების წამოღება გვერდის ჩატვირთვისას
-  useEffect(() => {
-    fetch("http://localhost:5000/api/recipes")
-      .then((res) => res.json())
-      .then((data) => {
-        setDbRecipes(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching recipes:", err);
-        setLoading(false);
-      });
-  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
