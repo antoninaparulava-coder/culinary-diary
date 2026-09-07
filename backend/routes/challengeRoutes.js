@@ -59,24 +59,34 @@ Returns challenge definitions + current user's joined status.
 router.get("/", requireAuth, async (req, res) => {
   try {
     const participations = await ChallengeParticipation.find({
-      userId: req.userId,
       joined: true,
     });
 
     const joined = {};
+    const participantCounts = {};
 
     participations.forEach((p) => {
-      joined[p.challengeSlug] = true;
+      const slug = p.challengeSlug;
+
+      participantCounts[slug] =
+        (participantCounts[slug] || 0) + 1;
+
+      if (p.userId.toString() === req.userId.toString()) {
+        joined[slug] = true;
+      }
     });
 
     const result = challenges.map((challenge) => ({
       ...challenge,
+      participants: participantCounts[challenge.slug] || 0,
       joined: !!joined[challenge.slug],
     }));
 
     res.json(result);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message,
+    });
   }
 });
 

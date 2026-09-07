@@ -29,7 +29,7 @@ export const challenges: Challenge[] = [
     description:
       "Nurture a starter, fold the dough, and share your first golden crust.",
     emoji: "🍞",
-    participants: 320,
+    participants: 0,
     goal: 500,
     daysLeft: 12,
     tag: "Baking",
@@ -40,7 +40,7 @@ export const challenges: Challenge[] = [
     description:
       "Cook a complete dinner using only five pantry ingredients. Less is more.",
     emoji: "🥘",
-    participants: 120,
+    participants: 0,
     goal: 500,
     daysLeft: 5,
     tag: "Minimalist",
@@ -51,7 +51,7 @@ export const challenges: Challenge[] = [
     description:
       "Pick one herb or veg from your garden (or windowsill!) each day this week.",
     emoji: "🌿",
-    participants: 248,
+    participants: 0,
     goal: 400,
     daysLeft: 7,
     tag: "Seasonal",
@@ -117,6 +117,18 @@ export function useChallengeStore() {
   }, []);
 
   return store;
+}
+
+export async function loadChallengeData() {
+  const response = await fetch(API, {
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to load challenges.");
+  }
+
+  return response.json();
 }
 
 async function loadChallenges() {
@@ -244,9 +256,12 @@ export async function toggleJoin(slug: string) {
       }
     );
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.message || "Failed to update challenge.");
+      throw new Error(
+        data.message || "Failed to update challenge."
+      );
     }
 
     setStore({
@@ -255,8 +270,13 @@ export async function toggleJoin(slug: string) {
         [slug]: !isJoined,
       },
     });
+
+    window.dispatchEvent(
+      new CustomEvent("challenge-updated")
+    );
   } catch (error) {
     console.error(error);
+
     alert(
       error instanceof Error
         ? error.message

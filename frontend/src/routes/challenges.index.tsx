@@ -21,6 +21,7 @@ import {
   toggleJoin,
   submitProof,
   deleteSubmission,
+  loadChallengeData,
 } from "@/lib/challenges";
 
 export const Route = createFileRoute("/challenges/")({
@@ -34,8 +35,31 @@ export const Route = createFileRoute("/challenges/")({
 });
 
 function ChallengesPage() {
-  const [currentUserId, setCurrentUserId] =
-    useState<string | null>(null);
+  const [challengeData, setChallengeData] = useState(challenges);
+
+  useEffect(() => {
+  const load = () => {
+    loadChallengeData()
+      .then(setChallengeData)
+      .catch(console.error);
+  };
+
+  load();
+
+  window.addEventListener(
+    "challenge-updated",
+    load
+  );
+
+  return () => {
+    window.removeEventListener(
+      "challenge-updated",
+      load
+    );
+  };
+}, []);
+
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("http://localhost:5000/api/auth/me", {
@@ -87,11 +111,11 @@ function ChallengesPage() {
           </header>
 
           <section className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {challenges.map((c) => {
+            {challengeData.map((c) => {
               const isJoined = !!joined[c.slug];
               const proofUrl = proofs[c.slug];
               const isCompleted = isJoined && !!proofUrl;
-              const participants = c.participants + (isJoined ? 1 : 0);
+              const participants = c.participants;
               const pct = Math.round((participants / c.goal) * 100);
               const subs = submissions[c.slug] ?? [];
               const previewSubs = subs.slice(0, 4);
