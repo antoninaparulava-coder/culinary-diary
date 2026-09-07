@@ -3,6 +3,7 @@ import { Search, SlidersHorizontal, Clock, Flame, ChefHat, Utensils } from "luci
 import { useMemo, useState, useEffect } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { Link } from "@tanstack/react-router";
+import { matchScore } from "@/lib/ingredientMatching";
 
 // ვქმნით ინტერფეისს ჩვენი ბექენდის მონაცემებისთვის
 interface BackendRecipe {
@@ -30,19 +31,55 @@ export const Route = createFileRoute("/recipes")({
 
 type FilterKey = "time" | "calories" | "difficulty";
 
-// Logic that calculates the percentage of ingredients in the refrigerator that match the recipe
-function matchScore(recipeIngredients: string[], pantry: Set<string>) {
-  if (recipeIngredients.length === 0) return 0;
-  const matched = recipeIngredients.filter((ing) => pantry.has(ing)).length;
-  return Math.round((matched / recipeIngredients.length) * 100);
+// Normalize ingredient names so that small differences
+// like "Pasta", "pasta" or " pasta " don't prevent a match.
+function normalizeIngredient(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[.,!?()]/g, "")
+    .replace(/\s+/g, " ");
 }
+
+// Check whether a recipe ingredient exists in the pantry.
+// Recipe ingredients can contain amounts, for example:
+// "200g Pasta" while the pantry contains "Pasta".
+
+function ingredientMatchesPantry(
+  recipeIngredient: string,
+  pantry: Set<string>
+) {
+  const normalizedRecipeIngredient = normalizeIngredient(recipeIngredient);
+
+  for (const pantryIngredient of pantry) {
+    if (
+      normalizedRecipeIngredient === pantryIngredient ||
+      normalizedRecipeIngredient.includes(pantryIngredient)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// Calculates how many ingredients required by the recipe
+// are available in the user's pantry.
 
 function RecipesPage() {
   const [dbRecipes, setDbRecipes] = useState<BackendRecipe[]>([]);
-  const [pantryItems, setPantryItems] = useState<{ name: string }[]>([]);
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterKey | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pantryItems, setPantryItems] = useState<
+  {
+    _id: string;
+    name: string;
+    quantity: number;
+    unit: string;
+    category: string;
+  }[]
+>([]);
   
   useEffect(() => {
     async function fetchData() {  
@@ -77,17 +114,15 @@ function RecipesPage() {
     fetchData();
   }, []);
 
-  const pantrySet = useMemo(
-    () => new Set(pantryItems.map((item) => item.name)),
-    [pantryItems],
-  );
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     
     const list = dbRecipes.map((r) => ({
       recipe: r,
-      score: matchScore(r.ingredients, pantrySet)
+      score: matchScore(
+        r.ingredients,
+        pantryItems.map((item) => item.name)
+      ),
     }));
 
     // FILTRATION BY SEARCH
@@ -110,7 +145,7 @@ function RecipesPage() {
     }
 
     return filteredList;
-  }, [query, activeFilter, dbRecipes, pantrySet]);
+  }, [query, activeFilter, dbRecipes, pantryItems]);
 
   const filters: { key: FilterKey; label: string; icon: typeof Clock }[] = [
     { key: "time", label: "Cooking Time", icon: Clock },

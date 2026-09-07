@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
+import { ingredientMatchesPantry } from "@/lib/ingredientMatching";
 
 export const Route = createFileRoute("/recipe/$id")({
   component: RecipeDetailPage,
@@ -120,7 +121,7 @@ function RecipeDetailPage() {
 
                   // Find if ingredient name exists in Pantry safely
                   const pantryMatch = pantryItems.find((p) =>
-                    p && p.name && ingredientText.toLowerCase().includes(p.name.toLowerCase())
+                    p && p.name && ingredientMatchesPantry(ingredientText, p.name)
                   );
 
                   return (
