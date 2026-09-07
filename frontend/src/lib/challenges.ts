@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 export type Challenge = {
+  _id?: string;
   slug: string;
   title: string;
   description: string;
@@ -9,8 +10,13 @@ export type Challenge = {
   goal: number;
   daysLeft: number;
   tag: string;
+  startDate: string;
+  endDate: string;
+  active: boolean;
+  ended: boolean;
   joined?: boolean;
 };
+
 
 export type Submission = {
   id: string;
@@ -22,41 +28,9 @@ export type Submission = {
 
 const API = "http://localhost:5000/api/challenges";
 
-export const challenges: Challenge[] = [
-  {
-    slug: "sourdough-bread",
-    title: "Bake Your Own Sourdough Bread",
-    description:
-      "Nurture a starter, fold the dough, and share your first golden crust.",
-    emoji: "🍞",
-    participants: 0,
-    goal: 500,
-    daysLeft: 12,
-    tag: "Baking",
-  },
-  {
-    slug: "5-ingredient-sunday",
-    title: "5-Ingredient Sunday Dinner",
-    description:
-      "Cook a complete dinner using only five pantry ingredients. Less is more.",
-    emoji: "🥘",
-    participants: 0,
-    goal: 500,
-    daysLeft: 5,
-    tag: "Minimalist",
-  },
-  {
-    slug: "garden-to-plate",
-    title: "Garden to Plate Week",
-    description:
-      "Pick one herb or veg from your garden (or windowsill!) each day this week.",
-    emoji: "🌿",
-    participants: 0,
-    goal: 400,
-    daysLeft: 7,
-    tag: "Seasonal",
-  },
-];
+export const challenges: Challenge[] = [];
+
+
 
 export const getChallengeBySlug = (slug: string) =>
   challenges.find((c) => c.slug === slug);
@@ -101,6 +75,7 @@ function subscribe(listener: () => void) {
   };
 }
 
+
 export function useChallengeStore() {
   const [store, setLocalStore] = useState(globalStore);
 
@@ -137,13 +112,24 @@ async function loadChallenges() {
 
     cachedUserId = user._id || user.id;
 
+    const challengeResponse = await fetch(API, {
+      credentials: "include",
+    });
+
+    if (!challengeResponse.ok) {
+      throw new Error("Failed to load challenges.");
+    }
+
+    const challengeData: Challenge[] =
+      await challengeResponse.json();
+
     const [statusResponse, ...submissionResponses] =
       await Promise.all([
         fetch(`${API}/status`, {
           credentials: "include",
         }),
 
-        ...challenges.map((challenge) =>
+        ...challengeData.map((challenge) =>
           fetch(`${API}/${challenge.slug}/submissions`)
         ),
       ]);
@@ -156,16 +142,16 @@ async function loadChallenges() {
 
     const submissions: Record<string, Submission[]> = {};
 
-    for (let i = 0; i < challenges.length; i++) {
+    for (let i = 0; i < challengeData.length; i++) {
       if (submissionResponses[i].ok) {
-        submissions[challenges[i].slug] =
+        submissions[challengeData[i].slug] =
           await submissionResponses[i].json();
       }
     }
 
     const voted: Record<string, boolean> = {};
 
-    for (const challenge of challenges) {
+    for (const challenge of challengeData) {
       const voteResponse = await fetch(
         `${API}/${challenge.slug}/votes`,
         {
@@ -185,7 +171,7 @@ async function loadChallenges() {
 
     const proofs: Record<string, string | null> = {};
 
-    for (const challenge of challenges) {
+    for (const challenge of challengeData) {
       const ownSubmission = (
         submissions[challenge.slug] ?? []
       ).find(
@@ -212,6 +198,7 @@ async function loadChallenges() {
     });
   }
 }
+
 
 let cachedUserId: string | null = null;
 

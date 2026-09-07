@@ -3,16 +3,26 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Heart, Flame, Users, Clock, Trophy, Trash2 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import {
-  getChallengeBySlug,
   useChallengeStore,
   toggleVote,
   deleteSubmission,
 } from "@/lib/challenges";
 
 export const Route = createFileRoute("/challenges/$slug")({
-  loader: ({ params }) => {
-    const challenge = getChallengeBySlug(params.slug);
-    if (!challenge) throw notFound();
+  loader: async ({ params }) => {
+    const response = await fetch(
+      `http://localhost:5000/api/challenges/${params.slug}`,
+      {
+        credentials: "include",
+      }
+    );
+
+    if (!response.ok) {
+      throw notFound();
+    }
+
+    const challenge = await response.json();
+
     return { challenge };
   },
   head: ({ loaderData }) => ({

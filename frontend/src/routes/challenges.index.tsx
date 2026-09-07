@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import {
-  challenges,
   useChallengeStore,
   toggleJoin,
   submitProof,
@@ -35,7 +34,7 @@ export const Route = createFileRoute("/challenges/")({
 });
 
 function ChallengesPage() {
-  const [challengeData, setChallengeData] = useState(challenges);
+  const [challengeData, setChallengeData] = useState<any[]>([]);
 
   useEffect(() => {
   const load = () => {
@@ -58,7 +57,6 @@ function ChallengesPage() {
     );
   };
 }, []);
-
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -112,6 +110,7 @@ function ChallengesPage() {
 
           <section className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {challengeData.map((c) => {
+              const isEnded = c.ended || !c.active;
               const isJoined = !!joined[c.slug];
               const proofUrl = proofs[c.slug];
               const isCompleted = isJoined && !!proofUrl;
@@ -221,10 +220,10 @@ function ChallengesPage() {
                   <div className="mt-auto flex items-center justify-between gap-3 border-t border-border pt-4 mt-5">
                     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3.5 w-3.5" />
-                      {c.daysLeft} days left
+                      {c.ended ? "Challenge ended" : `${c.daysLeft} days left`}
                     </span>
                     <div className="flex items-center gap-2">
-                      {isJoined && !isCompleted && (
+                      {!isEnded && isJoined && !isCompleted && (
                         <>
                           <input
                             type="file"
@@ -246,7 +245,8 @@ function ChallengesPage() {
                         </>
                       )}
                       <button
-                        onClick={() => toggleJoin(c.slug)}
+                        onClick={() => !isEnded && toggleJoin(c.slug)}
+                        disabled={isEnded}
                         aria-pressed={isJoined}
                         className={
                           isJoined
@@ -254,7 +254,12 @@ function ChallengesPage() {
                             : "inline-flex items-center justify-center gap-1.5 rounded-full bg-sage px-4 py-2 text-xs font-medium text-sage-foreground shadow-sm shadow-sage/20 hover:shadow-md hover:shadow-sage/30 hover:-translate-y-0.5 transition-all w-[140px]"
                         }
                       >
-                        {isJoined ? (
+                        {isEnded ? (
+                          <>
+                            <Clock className="h-3.5 w-3.5 shrink-0" />
+                            Challenge Ended
+                          </>
+                        ) : isJoined ? (
                           <>
                             <Check className="h-3.5 w-3.5 group-hover:hidden shrink-0" />
                             <span className="group-hover:hidden">Joined</span>

@@ -8,59 +8,36 @@ const requireAuth = require("../middleware/auth");
 const User = require("../models/User");
 const cloudinary = require("../config/cloudinary");
 const upload = require("../middleware/upload");
-
-// Challenge definitions.
-// These match the challenges on the frontend.
-const challenges = [
-  {
-    slug: "sourdough-bread",
-    title: "Bake Your Own Sourdough Bread",
-    description:
-      "Nurture a starter, fold the dough, and share your first golden crust.",
-    emoji: "🍞",
-    participants: 320,
-    goal: 500,
-    daysLeft: 12,
-    tag: "Baking",
-  },
-  {
-    slug: "5-ingredient-sunday",
-    title: "5-Ingredient Sunday Dinner",
-    description:
-      "Cook a complete dinner using only five pantry ingredients. Less is more.",
-    emoji: "🥘",
-    participants: 120,
-    goal: 500,
-    daysLeft: 5,
-    tag: "Minimalist",
-  },
-  {
-    slug: "garden-to-plate",
-    title: "Garden to Plate Week",
-    description:
-      "Pick one herb or veg from your garden (or windowsill!) each day this week.",
-    emoji: "🌿",
-    participants: 248,
-    goal: 400,
-    daysLeft: 7,
-    tag: "Seasonal",
-  },
-];
-
-function getChallenge(slug) {
-  return challenges.find((challenge) => challenge.slug === slug);
-}
+const Challenge = require("../models/Challenge");
 
 /*
 GET /api/challenges
 
 Returns challenge definitions + current user's joined status.
 */
+
 router.get("/", requireAuth, async (req, res) => {
   try {
+    const now = new Date();
+
+    // Automatically end expired challenges
+    await Challenge.updateMany(
+      {
+        endDate: { $lt: now },
+        active: true,
+      },
+      {
+        $set: { active: false },
+      }
+    );
+
+    const challenges = await Challenge.find()
+      .sort({ startDate: 1 })
+      .lean();
+
     const participations = await ChallengeParticipation.find({
       joined: true,
-    });
+    }).lean();
 
     const joined = {};
     const participantCounts = {};
@@ -76,14 +53,36 @@ router.get("/", requireAuth, async (req, res) => {
       }
     });
 
-    const result = challenges.map((challenge) => ({
-      ...challenge,
-      participants: participantCounts[challenge.slug] || 0,
-      joined: !!joined[challenge.slug],
-    }));
+    const result = challenges.map((challenge) => {
+      const endDate = new Date(challenge.endDate);
+
+      const difference = endDate.getTime() - now.getTime();
+
+      const daysLeft = Math.max(
+        0,
+        Math.ceil(difference / (1000 * 60 * 60 * 24))
+      );
+
+      return {
+        ...challenge,
+
+        participants:
+          participantCounts[challenge.slug] || 0,
+
+        joined:
+          !!joined[challenge.slug],
+
+        daysLeft,
+
+        ended:
+          !challenge.active || difference <= 0,
+      };
+    });
 
     res.json(result);
   } catch (error) {
+    console.error(error);
+
     res.status(500).json({
       message: error.message,
     });
@@ -119,10 +118,20 @@ POST /api/challenges/:slug/join
 */
 router.post("/:slug/join", requireAuth, async (req, res) => {
   try {
-    const challenge = getChallenge(req.params.slug);
+    const challenge = await Challenge.findOne({
+      slug: req.params.slug,
+    });
 
     if (!challenge) {
-      return res.status(404).json({ message: "Challenge not found." });
+      return res.status(404).json({
+        message: "Challenge not found.",
+      });
+    }
+
+    if (!challenge.active || new Date() >= challenge.endDate) {
+      return res.status(400).json({
+        message: "This challenge has ended.",
+      });
     }
 
     const participation =
@@ -155,6 +164,8 @@ DELETE /api/challenges/:slug/join
 IMPORTANT:
 This does NOT delete submissions.
 */
+
+
 router.delete("/:slug/join", requireAuth, async (req, res) => {
   try {
     const participation =
@@ -183,6 +194,60 @@ router.delete("/:slug/join", requireAuth, async (req, res) => {
   }
 });
 
+router.get("/:slug", requireAuth, async (req, res) => {
+  try {
+    const now = new Date();
+
+    const challenge = await Challenge.findOne({
+      slug: req.params.slug,
+    }).lean();
+
+    if (!challenge) {
+      return res.status(404).json({
+        message: "Challenge not found.",
+      });
+    }
+
+    if (challenge.active && now >= new Date(challenge.endDate)) {
+      await Challenge.updateOne(
+        { _id: challenge._id },
+        { $set: { active: false } }
+      );
+
+      challenge.active = false;
+    }
+
+    const participants = await ChallengeParticipation.countDocuments({
+      challengeSlug: challenge.slug,
+      joined: true,
+    });
+
+    const difference =
+      new Date(challenge.endDate).getTime() - now.getTime();
+
+    const daysLeft = Math.max(
+      0,
+      Math.ceil(
+        difference / (1000 * 60 * 60 * 24)
+      )
+    );
+
+    res.json({
+      ...challenge,
+      participants,
+      daysLeft,
+      ended:
+        !challenge.active || difference <= 0,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+});
+
 /*
 GET /api/challenges/:slug/submissions
 
@@ -190,10 +255,14 @@ Everyone can see submissions.
 */
 router.get("/:slug/submissions", async (req, res) => {
   try {
-    const challenge = getChallenge(req.params.slug);
+    const challenge = await Challenge.findOne({
+      slug: req.params.slug,
+    });
 
     if (!challenge) {
-      return res.status(404).json({ message: "Challenge not found." });
+      return res.status(404).json({
+        message: "Challenge not found.",
+      });
     }
 
     const submissions = await Submission.find({
@@ -212,17 +281,21 @@ POST /api/challenges/:slug/submissions
 For now imageUrl is supplied by the frontend.
 We'll connect permanent image uploading next.
 */
-router.post(
-  "/:slug/submissions",
-  requireAuth,
-  upload.single("image"),
-  async (req, res) => {
+router.post("/:slug/submissions", requireAuth, upload.single("image"), async (req, res) => {
     try {
-      const challenge = getChallenge(req.params.slug);
+      const challenge = await Challenge.findOne({
+       slug: req.params.slug,
+      });
 
       if (!challenge) {
         return res.status(404).json({
           message: "Challenge not found.",
+        });
+      }
+
+      if (!challenge.active || new Date() >= challenge.endDate) {
+        return res.status(400).json({
+          message: "This challenge has ended.",
         });
       }
 
