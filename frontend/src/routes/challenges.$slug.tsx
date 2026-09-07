@@ -1,7 +1,7 @@
+import { useEffect, useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Heart, Flame, Users, Clock, Trophy, Trash2 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
-import { initialIngredients } from "@/lib/pantry";
 import {
   getChallengeBySlug,
   useChallengeStore,
@@ -45,6 +45,19 @@ export const Route = createFileRoute("/challenges/$slug")({
 });
 
 function GalleryPage() {
+  const [currentUserId, setCurrentUserId] =
+    useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/auth/me", {
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((user) => {
+        setCurrentUserId(user._id || user.id);
+      });
+  }, []);
+
   const { challenge } = Route.useLoaderData();
   const { submissions, voted } = useChallengeStore();
   const subs = [...(submissions[challenge.slug] ?? [])].sort(
@@ -118,7 +131,7 @@ function GalleryPage() {
               {subs.map((s, i) => {
                 const key = `${challenge.slug}:${s.id}`;
                 const hasVoted = !!voted[key];
-                const isOwn = s.id.startsWith("me-");
+                const isOwn = s.userId === currentUserId;
                 return (
                   <article
                     key={s.id}

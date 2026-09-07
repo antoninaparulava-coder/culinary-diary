@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Trophy,
@@ -14,7 +15,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
-import { initialIngredients } from "@/lib/pantry";
 import {
   challenges,
   useChallengeStore,
@@ -34,6 +34,19 @@ export const Route = createFileRoute("/challenges/")({
 });
 
 function ChallengesPage() {
+  const [currentUserId, setCurrentUserId] =
+    useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/auth/me", {
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((user) => {
+        setCurrentUserId(user._id || user.id);
+      });
+  }, []);
+
   const { joined, proofs, submissions } = useChallengeStore();
 
   // Aggregate leaderboard from all submissions across challenges
@@ -82,7 +95,9 @@ function ChallengesPage() {
               const pct = Math.round((participants / c.goal) * 100);
               const subs = submissions[c.slug] ?? [];
               const previewSubs = subs.slice(0, 4);
-              const ownSub = subs.find((s) => s.id.startsWith("me-"));
+              const ownSub = subs.find(
+                (s) => s.userId === currentUserId
+              );
               return (
                 <article
                   key={c.slug}

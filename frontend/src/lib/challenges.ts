@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 
 export type Challenge = {
   slug: string;
@@ -9,14 +9,18 @@ export type Challenge = {
   goal: number;
   daysLeft: number;
   tag: string;
+  joined?: boolean;
 };
 
 export type Submission = {
   id: string;
+  userId: string;
   author: string;
   imageUrl: string;
   votes: number;
 };
+
+const API = "http://localhost:5000/api/challenges";
 
 export const challenges: Challenge[] = [
   {
@@ -57,184 +61,356 @@ export const challenges: Challenge[] = [
 export const getChallengeBySlug = (slug: string) =>
   challenges.find((c) => c.slug === slug);
 
-type State = {
+export type ChallengeStore = {
   joined: Record<string, boolean>;
   proofs: Record<string, string | null>;
   submissions: Record<string, Submission[]>;
   voted: Record<string, boolean>;
+  loading: boolean;
 };
 
-const state: State = {
+const emptyStore: ChallengeStore = {
   joined: {},
   proofs: {},
+  submissions: {},
   voted: {},
-  submissions: {
-    "sourdough-bread": [
-      {
-        id: "s1",
-        author: "Maya",
-        imageUrl:
-          "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop",
-        votes: 42,
-      },
-      {
-        id: "s2",
-        author: "Jonas",
-        imageUrl:
-          "https://images.unsplash.com/photo-1585478259715-876acc5be8eb?w=600&auto=format&fit=crop",
-        votes: 27,
-      },
-      {
-        id: "s6",
-        author: "Rosa",
-        imageUrl:
-          "https://images.unsplash.com/photo-1608198093002-ad4e005484ec?w=600&auto=format&fit=crop",
-        votes: 15,
-      },
-      {
-        id: "s7",
-        author: "Kenji",
-        imageUrl:
-          "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&auto=format&fit=crop",
-        votes: 9,
-      },
-    ],
-    "5-ingredient-sunday": [
-      {
-        id: "s3",
-        author: "Priya",
-        imageUrl:
-          "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&auto=format&fit=crop",
-        votes: 18,
-      },
-      {
-        id: "s8",
-        author: "Tom",
-        imageUrl:
-          "https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=600&auto=format&fit=crop",
-        votes: 22,
-      },
-      {
-        id: "s9",
-        author: "Lea",
-        imageUrl:
-          "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&auto=format&fit=crop",
-        votes: 11,
-      },
-    ],
-    "garden-to-plate": [
-      {
-        id: "s4",
-        author: "Eli",
-        imageUrl:
-          "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&auto=format&fit=crop",
-        votes: 31,
-      },
-      {
-        id: "s5",
-        author: "Ana",
-        imageUrl:
-          "https://images.unsplash.com/photo-1519996529931-28324d5a630e?w=600&auto=format&fit=crop",
-        votes: 12,
-      },
-      {
-        id: "s10",
-        author: "Sam",
-        imageUrl:
-          "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop",
-        votes: 20,
-      },
-    ],
-  },
+  loading: true,
 };
 
-let current: State = state;
+let globalStore = emptyStore;
 const listeners = new Set<() => void>();
-const emit = () => listeners.forEach((l) => l());
-const subscribe = (l: () => void) => {
-  listeners.add(l);
-  return () => listeners.delete(l);
-};
-const getSnapshot = () => current;
 
-const update = (patch: Partial<State>) => {
-  current = { ...current, ...patch };
-  emit();
-};
-
-export function useChallengeStore() {
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+function emit() {
+  listeners.forEach((listener) => listener());
 }
 
-const isOwn = (id: string) => id.startsWith("me-");
-
-export const deleteSubmission = (slug: string, subId: string) => {
-  const remaining = (current.submissions[slug] ?? []).filter(
-    (s) => s.id !== subId
-  );
-  const nextVoted = { ...current.voted };
-  delete nextVoted[`${slug}:${subId}`];
-  const nextProofs = { ...current.proofs };
-  const stillHasOwn = remaining.some((s) => isOwn(s.id));
-  if (!stillHasOwn) nextProofs[slug] = null;
-  update({
-    submissions: { ...current.submissions, [slug]: remaining },
-    voted: nextVoted,
-    proofs: nextProofs,
-  });
-};
-
-export const toggleJoin = (slug: string) => {
-  const leaving = !!current.joined[slug];
-  if (leaving) {
-    // Auto-delete user's own submissions when leaving
-    const remaining = (current.submissions[slug] ?? []).filter(
-      (s) => !isOwn(s.id)
-    );
-    const nextVoted = { ...current.voted };
-    Object.keys(nextVoted).forEach((k) => {
-      if (k.startsWith(`${slug}:me-`)) delete nextVoted[k];
-    });
-    const nextProofs = { ...current.proofs, [slug]: null };
-    update({
-      joined: { ...current.joined, [slug]: false },
-      submissions: { ...current.submissions, [slug]: remaining },
-      voted: nextVoted,
-      proofs: nextProofs,
-    });
-  } else {
-    update({ joined: { ...current.joined, [slug]: true } });
-  }
-};
-
-export const submitProof = (slug: string, file: File) => {
-  const url = URL.createObjectURL(file);
-  const newSub: Submission = {
-    id: `me-${slug}-${Date.now()}`,
-    author: "You",
-    imageUrl: url,
-    votes: 0,
+function setStore(patch: Partial<ChallengeStore>) {
+  globalStore = {
+    ...globalStore,
+    ...patch,
   };
-  update({
-    proofs: { ...current.proofs, [slug]: url },
-    submissions: {
-      ...current.submissions,
-      [slug]: [newSub, ...(current.submissions[slug] ?? [])],
-    },
-  });
-};
 
-export const toggleVote = (slug: string, subId: string) => {
-  const key = `${slug}:${subId}`;
-  const hasVoted = !!current.voted[key];
-  update({
-    voted: { ...current.voted, [key]: !hasVoted },
-    submissions: {
-      ...current.submissions,
-      [slug]: (current.submissions[slug] ?? []).map((s) =>
-        s.id === subId ? { ...s, votes: s.votes + (hasVoted ? -1 : 1) } : s
-      ),
-    },
-  });
-};
+  emit();
+}
 
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export function useChallengeStore() {
+  const [store, setLocalStore] = useState(globalStore);
+
+  useEffect(() => {
+    const unsubscribe = subscribe(() => {
+      setLocalStore(globalStore);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    loadChallenges();
+  }, []);
+
+  return store;
+}
+
+async function loadChallenges() {
+  try {
+    const user = await getCurrentUser();
+
+    cachedUserId = user._id || user.id;
+
+    const [statusResponse, ...submissionResponses] =
+      await Promise.all([
+        fetch(`${API}/status`, {
+          credentials: "include",
+        }),
+
+        ...challenges.map((challenge) =>
+          fetch(`${API}/${challenge.slug}/submissions`)
+        ),
+      ]);
+
+    if (!statusResponse.ok) {
+      throw new Error("Failed to load challenge status.");
+    }
+
+    const status = await statusResponse.json();
+
+    const submissions: Record<string, Submission[]> = {};
+
+    for (let i = 0; i < challenges.length; i++) {
+      if (submissionResponses[i].ok) {
+        submissions[challenges[i].slug] =
+          await submissionResponses[i].json();
+      }
+    }
+
+    const voted: Record<string, boolean> = {};
+
+    for (const challenge of challenges) {
+      const voteResponse = await fetch(
+        `${API}/${challenge.slug}/votes`,
+        {
+          credentials: "include",
+        }
+      );
+
+      if (voteResponse.ok) {
+        const votedIds: string[] =
+          await voteResponse.json();
+
+        votedIds.forEach((id) => {
+          voted[`${challenge.slug}:${id}`] = true;
+        });
+      }
+    }
+
+    const proofs: Record<string, string | null> = {};
+
+    for (const challenge of challenges) {
+      const ownSubmission = (
+        submissions[challenge.slug] ?? []
+      ).find(
+        (submission) =>
+          submission.userId === cachedUserId
+      );
+
+      proofs[challenge.slug] =
+        ownSubmission?.imageUrl ?? null;
+    }
+
+    setStore({
+      joined: status.joined ?? {},
+      submissions,
+      voted,
+      proofs,
+      loading: false,
+    });
+  } catch (error) {
+    console.error("Failed to load challenges:", error);
+
+    setStore({
+      loading: false,
+    });
+  }
+}
+
+let cachedUserId: string | null = null;
+
+async function getCurrentUser() {
+  const response = await fetch(
+    "http://localhost:5000/api/auth/me",
+    {
+      credentials: "include",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Not authenticated.");
+  }
+
+  return response.json();
+}
+
+function getCurrentUserId() {
+  return cachedUserId;
+}
+
+async function ensureCurrentUser() {
+  if (cachedUserId) return cachedUserId;
+
+  const user = await getCurrentUser();
+
+  cachedUserId = user._id || user.id;
+
+  return cachedUserId;
+}
+
+export async function toggleJoin(slug: string) {
+  const isJoined = !!globalStore.joined[slug];
+
+  try {
+    const response = await fetch(
+      `${API}/${slug}/join`,
+      {
+        method: isJoined ? "DELETE" : "POST",
+        credentials: "include",
+      }
+    );
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || "Failed to update challenge.");
+    }
+
+    setStore({
+      joined: {
+        ...globalStore.joined,
+        [slug]: !isJoined,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Something went wrong."
+    );
+  }
+}
+
+export async function submitProof(
+  slug: string,
+  file: File
+) {
+  try {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await fetch(
+      `${API}/${slug}/submissions`,
+      {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || "Failed to submit proof."
+      );
+    }
+
+    const existing = globalStore.submissions[slug] ?? [];
+
+    setStore({
+      proofs: {
+        ...globalStore.proofs,
+        [slug]: data.imageUrl,
+      },
+
+      submissions: {
+        ...globalStore.submissions,
+        [slug]: [data, ...existing],
+      },
+    });
+  } catch (error) {
+    console.error(error);
+
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Failed to submit proof."
+    );
+  }
+}
+
+export async function deleteSubmission(
+  slug: string,
+  subId: string
+) {
+  try {
+    const response = await fetch(
+      `${API}/${slug}/submissions/${subId}`,
+      {
+        method: "DELETE",
+        credentials: "include",
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || "Failed to delete submission."
+      );
+    }
+
+    const remaining = (
+      globalStore.submissions[slug] ?? []
+    ).filter((submission) => submission.id !== subId);
+
+    setStore({
+      submissions: {
+        ...globalStore.submissions,
+        [slug]: remaining,
+      },
+
+      proofs: {
+        ...globalStore.proofs,
+        [slug]: null,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Failed to delete submission."
+    );
+  }
+}
+
+export async function toggleVote(
+  slug: string,
+  subId: string
+) {
+  try {
+    const response = await fetch(
+      `${API}/${slug}/submissions/${subId}/vote`,
+      {
+        method: "POST",
+        credentials: "include",
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || "Failed to vote."
+      );
+    }
+
+    const key = `${slug}:${subId}`;
+
+    setStore({
+      voted: {
+        ...globalStore.voted,
+        [key]: data.voted,
+      },
+
+      submissions: {
+        ...globalStore.submissions,
+        [slug]: (
+          globalStore.submissions[slug] ?? []
+        ).map((submission) =>
+          submission.id === subId
+            ? {
+                ...submission,
+                votes: data.votes,
+              }
+            : submission
+        ),
+      },
+    });
+  } catch (error) {
+    console.error(error);
+
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Failed to vote."
+    );
+  }
+}

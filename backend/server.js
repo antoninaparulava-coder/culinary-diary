@@ -7,6 +7,8 @@ require("dotenv").config();
 const recipeRoutes = require("./routes/recipeRoutes");
 const mealPlanRoutes = require("./routes/mealPlanRoutes");
 const authRoutes = require("./routes/authRoutes");
+const challengeRoutes = require("./routes/challengeRoutes");
+
 const requireAuth = require("./middleware/auth");
 
 // Models
@@ -43,6 +45,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/recipes", recipeRoutes);
 
 app.use("/api/meal-plans", mealPlanRoutes);
+
+app.use("/api/challenges", challengeRoutes);
 
 
 // ==========================
