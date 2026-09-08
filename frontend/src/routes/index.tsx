@@ -272,6 +272,9 @@ function Index() {
                     <option value="ml">ml</option>
                     <option value="pack">pack</option>
                     <option value="tbsp">tbsp</option>
+                    <option value="tbsp">cloves</option>
+                    <option value="tbsp">cups</option>
+                    <option value="tbsp">slices</option>
                   </select>
 
                   <button

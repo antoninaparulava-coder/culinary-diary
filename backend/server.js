@@ -9,6 +9,7 @@ const mealPlanRoutes = require("./routes/mealPlanRoutes");
 const authRoutes = require("./routes/authRoutes");
 const challengeRoutes = require("./routes/challengeRoutes");
 const pantryRoutes = require("./routes/pantryRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 
@@ -44,6 +45,8 @@ app.use("/api/meal-plans", mealPlanRoutes);
 app.use("/api/challenges", challengeRoutes);
 
 app.use("/api/pantry", pantryRoutes);
+
+app.use("/api/admin", adminRoutes);
 
 
 // ==========================

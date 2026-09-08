@@ -34,7 +34,9 @@ export function Sidebar({ pantryCount: propCount }: { pantryCount?: number }) {
   useEffect(() => {
     async function fetchPantryCount() {
       try {
-        const res = await fetch("http://localhost:5000/api/pantry");
+        const res = await fetch("http://localhost:5000/api/pantry", {
+          credentials: "include",
+        });
         if (!res.ok) return;
         const data = await res.json();
         if (Array.isArray(data)) {

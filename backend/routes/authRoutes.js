@@ -129,6 +129,7 @@ router.post("/login", async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        role: user.role,
       },
     });
   } catch (error) {
@@ -159,6 +160,7 @@ router.get("/me", requireAuth, async (req, res) => {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
+      role: user.role,
     });
   } catch (error) {
     console.error("Get current user error:", error);
