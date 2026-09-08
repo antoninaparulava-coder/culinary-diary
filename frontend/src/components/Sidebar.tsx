@@ -7,6 +7,7 @@ import {
   Sparkles,
   Gift,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 import { useState, useEffect, type ComponentType } from "react";
 
@@ -26,6 +27,7 @@ const navItems: NavItem[] = [
 
 export function Sidebar({ pantryCount: propCount }: { pantryCount?: number }) {
   const [fetchedCount, setFetchedCount] = useState<number | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
@@ -48,8 +50,31 @@ export function Sidebar({ pantryCount: propCount }: { pantryCount?: number }) {
       }
     }
 
+    async function checkAdmin() {
+      try {
+        const res = await fetch(
+          "http://localhost:5000/api/auth/me",
+          {
+            credentials: "include",
+          }
+        );
+
+        if (!res.ok) {
+          setIsAdmin(false);
+          return;
+    }
+    
+        const data = await res.json();
+
+        setIsAdmin(data.role === "admin");
+      } catch {
+        setIsAdmin(false);
+      }
+    }
+
     // Initial fetch on mount & route change
     fetchPantryCount();
+    checkAdmin();
 
     // Listen for live add/delete events in the pantry
     window.addEventListener("pantryUpdated", fetchPantryCount);
@@ -111,6 +136,22 @@ export function Sidebar({ pantryCount: propCount }: { pantryCount?: number }) {
             );
           })}
         </nav>
+
+        {isAdmin && (
+          <Link
+            to="/admin"
+            className={`group flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+              pathname === "/admin"
+                ? "bg-sage-soft text-[oklch(0.32_0.06_145)]"
+                : "text-muted-foreground hover:bg-beige hover:text-foreground"
+            }`}
+          >
+            <ShieldCheck className="h-4 w-4" />
+            <span className="whitespace-nowrap">
+              Admin Panel
+            </span>
+          </Link>
+        )}
 
         <div className="mt-auto hidden lg:block">
           <div className="rounded-2xl bg-beige p-4">

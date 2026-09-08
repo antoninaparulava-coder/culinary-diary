@@ -1,22 +1,14 @@
-const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
 async function requireAdmin(req, res, next) {
   try {
-    const token = req.cookies.token;
-
-    if (!token) {
+    if (!req.userId) {
       return res.status(401).json({
         message: "Not authenticated.",
       });
     }
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET
-    );
-
-    const user = await User.findById(decoded.userId).select("role");
+    const user = await User.findById(req.userId);
 
     if (!user) {
       return res.status(401).json({
@@ -30,15 +22,14 @@ async function requireAdmin(req, res, next) {
       });
     }
 
-    req.userId = user._id;
-    req.userRole = user.role;
+    req.adminUser = user;
 
     next();
   } catch (error) {
-    console.error("Admin authorization error:", error);
+    console.error("Admin middleware error:", error);
 
-    return res.status(401).json({
-      message: "Invalid or expired authentication.",
+    return res.status(500).json({
+      message: "Could not verify administrator access.",
     });
   }
 }
