@@ -9,6 +9,7 @@ import {
   Plus,
   X,
   RefreshCw,
+  Trophy,
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 
@@ -49,10 +50,30 @@ interface AdminRecipe {
 }
 
 
+interface AdminChallenge {
+  _id: string;
+  slug: string;
+  title: string;
+  description: string;
+  emoji: string;
+  goal: number;
+  tag: string;
+  startDate: string;
+  endDate: string;
+  active: boolean;
+  participants: number;
+  submissions: number;
+  daysLeft: number;
+  ended: boolean;
+}
+
+
 interface Stats {
   users: number;
   recipes: number;
+  challenges: number;
 }
+
 
 
 const emptyRecipe = {
@@ -67,15 +88,33 @@ const emptyRecipe = {
   difficulty: "Easy",
 };
 
+const emptyChallenge = {
+  slug: "",
+  title: "",
+  description: "",
+  emoji: "🏆",
+  goal: "100",
+  tag: "",
+  startDate: "",
+  endDate: "",
+  active: true,
+};
+
 
 function AdminPage() {
   const [stats, setStats] = useState<Stats>({
     users: 0,
     recipes: 0,
+    challenges: 0,
   });
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [recipes, setRecipes] = useState<AdminRecipe[]>([]);
+
+  const [challenges, setChallenges] = useState<AdminChallenge[]>([]);
+  const [showChallengeForm, setShowChallengeForm] = useState(false);
+  const [editingChallenge, setEditingChallenge] = useState<AdminChallenge | null>(null);
+  const [savingChallenge, setSavingChallenge] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -85,6 +124,7 @@ function AdminPage() {
     useState<AdminRecipe | null>(null);
 
   const [recipeForm, setRecipeForm] = useState(emptyRecipe);
+  const [challengeForm, setChallengeForm] = useState(emptyChallenge);
 
   const [savingRecipe, setSavingRecipe] = useState(false);
 
@@ -98,6 +138,7 @@ function AdminPage() {
         dashboardResponse,
         usersResponse,
         recipesResponse,
+        challengesResponse,
       ] = await Promise.all([
         fetch("http://localhost:5000/api/admin/dashboard", {
           credentials: "include",
@@ -110,12 +151,17 @@ function AdminPage() {
         fetch("http://localhost:5000/api/admin/recipes", {
           credentials: "include",
         }),
+
+        fetch("http://localhost:5000/api/admin/challenges", {
+          credentials: "include",
+        }),
       ]);
 
 
       const dashboardData = await dashboardResponse.json();
       const usersData = await usersResponse.json();
       const recipesData = await recipesResponse.json();
+      const challengesData = await challengesResponse.json();
 
 
       if (!dashboardResponse.ok) {
@@ -135,6 +181,19 @@ function AdminPage() {
           recipesData.message || "Could not load recipes."
         );
       }
+
+      if (!challengesResponse.ok) {
+        throw new Error(
+          challengesData.message ||
+            "Could not load challenges."
+        );
+      }
+
+      setChallenges(
+        Array.isArray(challengesData)
+          ? challengesData
+          : []
+      );
 
 
       setStats(dashboardData.stats);
@@ -418,6 +477,213 @@ function AdminPage() {
     }
   }
 
+  function startCreateChallenge() {
+  setEditingChallenge(null);
+  setChallengeForm(emptyChallenge);
+  setShowChallengeForm(true);
+}
+
+
+function startEditChallenge(
+  challenge: AdminChallenge
+) {
+  setEditingChallenge(challenge);
+
+  setChallengeForm({
+    slug: challenge.slug,
+    title: challenge.title,
+    description: challenge.description,
+    emoji: challenge.emoji || "🏆",
+    goal: String(challenge.goal),
+    tag: challenge.tag,
+    startDate: new Date(challenge.startDate)
+      .toISOString()
+      .slice(0, 16),
+    endDate: new Date(challenge.endDate)
+      .toISOString()
+      .slice(0, 16),
+    active: challenge.active,
+  });
+
+  setShowChallengeForm(true);
+}
+
+
+async function saveChallenge(
+  e: React.FormEvent
+) {
+  e.preventDefault();
+
+  try {
+    setSavingChallenge(true);
+
+    if (!challengeForm.title.trim()) {
+      throw new Error(
+        "Challenge title is required."
+      );
+    }
+
+    if (!challengeForm.description.trim()) {
+      throw new Error(
+        "Challenge description is required."
+      );
+    }
+
+    if (!challengeForm.tag.trim()) {
+      throw new Error(
+        "Challenge tag is required."
+      );
+    }
+
+    if (
+      !challengeForm.startDate ||
+      !challengeForm.endDate
+    ) {
+      throw new Error(
+        "Start and end dates are required."
+      );
+    }
+
+    if (
+      new Date(challengeForm.endDate) <=
+      new Date(challengeForm.startDate)
+    ) {
+      throw new Error(
+        "End date must be after start date."
+      );
+    }
+
+    const challengeData = {
+      slug: challengeForm.slug
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "-"),
+
+      title: challengeForm.title.trim(),
+
+      description:
+        challengeForm.description.trim(),
+
+      emoji:
+        challengeForm.emoji.trim() || "🏆",
+
+      goal: Number(challengeForm.goal),
+
+      tag: challengeForm.tag.trim(),
+
+      startDate:
+        challengeForm.startDate,
+
+      endDate:
+        challengeForm.endDate,
+
+      active: challengeForm.active,
+    };
+
+    if (
+      !editingChallenge &&
+      !challengeData.slug
+    ) {
+      throw new Error(
+        "Challenge slug is required."
+      );
+    }
+
+    const url = editingChallenge
+      ? `http://localhost:5000/api/admin/challenges/${editingChallenge._id}`
+      : "http://localhost:5000/api/admin/challenges";
+
+    const response = await fetch(url, {
+      method: editingChallenge
+        ? "PUT"
+        : "POST",
+
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+
+      credentials: "include",
+
+      body: JSON.stringify(
+        challengeData
+      ),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+          "Could not save challenge."
+      );
+    }
+
+    setShowChallengeForm(false);
+    setEditingChallenge(null);
+    setChallengeForm(emptyChallenge);
+
+    await loadAdminData();
+  } catch (err) {
+    alert(
+      err instanceof Error
+        ? err.message
+        : "Could not save challenge."
+    );
+  } finally {
+    setSavingChallenge(false);
+  }
+}
+
+
+async function deleteChallenge(
+  id: string
+) {
+  const confirmed = window.confirm(
+    "Delete this challenge and all of its submissions, votes, and participation records?"
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/admin/challenges/${id}`,
+      {
+        method: "DELETE",
+        credentials: "include",
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+          "Could not delete challenge."
+      );
+    }
+
+    setChallenges((current) =>
+      current.filter(
+        (challenge) =>
+          challenge._id !== id
+      )
+    );
+
+    setStats((current) => ({
+      ...current,
+      challenges:
+        current.challenges - 1,
+    }));
+  } catch (err) {
+    alert(
+      err instanceof Error
+        ? err.message
+        : "Could not delete challenge."
+    );
+  }
+}
+
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -484,7 +750,7 @@ function AdminPage() {
 
               {/* STATS */}
 
-              <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
 
                 <div className="rounded-3xl border border-border bg-card p-6">
 
@@ -535,6 +801,39 @@ function AdminPage() {
 
                   <p className="mt-4 text-xs text-muted-foreground">
                     Recipes in MongoDB
+                  </p>
+
+                </div>
+                
+
+                <div className="rounded-3xl border border-border bg-card p-6">
+
+                  <div className="flex items-start justify-between">
+
+                    <div>
+
+                      <p className="text-sm text-muted-foreground">
+                        Total Challenges
+                      </p>
+
+                      <p className="mt-2 font-display text-4xl">
+                        {loading
+                          ? "—"
+                          : stats.challenges}
+                      </p>
+
+                    </div>
+
+
+                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-sage-soft text-sage">
+                      <Trophy className="h-6 w-6" />
+                    </div>
+
+                  </div>
+
+
+                  <p className="mt-4 text-xs text-muted-foreground">
+                    Challenges in MongoDB
                   </p>
 
                 </div>
@@ -783,6 +1082,202 @@ function AdminPage() {
                 </div>
 
               </section>
+
+
+              {/* CHALLENGES */}
+
+<section className="mt-10">
+
+  <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+
+    <div className="flex items-center gap-3">
+
+      <Trophy className="h-5 w-5 text-sage" />
+
+      <div>
+
+        <h2 className="font-display text-2xl">
+          Challenges
+        </h2>
+
+        <p className="text-sm text-muted-foreground">
+          Manage challenges stored in MongoDB.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <button
+      onClick={startCreateChallenge}
+      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sage px-4 py-2.5 text-sm font-medium text-sage-foreground hover:opacity-90 transition"
+    >
+      <Plus className="h-4 w-4" />
+      Add Challenge
+    </button>
+
+  </div>
+
+
+  <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+
+    {challenges.map((challenge) => (
+
+      <article
+        key={challenge._id}
+        className="rounded-3xl border border-border bg-card p-5"
+      >
+
+        <div className="flex items-start justify-between gap-4">
+
+          <div className="flex items-start gap-3">
+
+            <span className="text-3xl">
+              {challenge.emoji}
+            </span>
+
+            <div>
+
+              <h3 className="font-display text-lg">
+                {challenge.title}
+              </h3>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                {challenge.slug}
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <span
+            className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+              challenge.ended
+                ? "bg-beige text-muted-foreground"
+                : challenge.active
+                ? "bg-sage-soft text-sage"
+                : "bg-destructive/5 text-destructive"
+            }`}
+          >
+            {challenge.ended
+              ? "Ended"
+              : challenge.active
+              ? "Active"
+              : "Inactive"}
+          </span>
+
+        </div>
+
+
+        <p className="mt-4 text-sm text-muted-foreground">
+          {challenge.description}
+        </p>
+
+
+        <div className="mt-4 grid grid-cols-3 gap-2">
+
+          <div className="rounded-2xl bg-beige/50 p-3">
+            <p className="text-[11px] text-muted-foreground">
+              Participants
+            </p>
+
+            <p className="mt-1 font-medium">
+              {challenge.participants}
+            </p>
+          </div>
+
+
+          <div className="rounded-2xl bg-beige/50 p-3">
+            <p className="text-[11px] text-muted-foreground">
+              Goal
+            </p>
+
+            <p className="mt-1 font-medium">
+              {challenge.goal}
+            </p>
+          </div>
+
+
+          <div className="rounded-2xl bg-beige/50 p-3">
+            <p className="text-[11px] text-muted-foreground">
+              Submissions
+            </p>
+
+            <p className="mt-1 font-medium">
+              {challenge.submissions}
+            </p>
+          </div>
+
+        </div>
+
+
+        <div className="mt-4 text-xs text-muted-foreground">
+
+          <p>
+            Tag:{" "}
+            <span className="font-medium text-foreground">
+              {challenge.tag}
+            </span>
+          </p>
+
+          <p className="mt-1">
+            Days left:{" "}
+            <span className="font-medium text-foreground">
+              {challenge.ended
+                ? "0"
+                : challenge.daysLeft}
+            </span>
+          </p>
+
+        </div>
+
+
+        <div className="mt-4 flex gap-2">
+
+          <button
+            onClick={() =>
+              startEditChallenge(
+                challenge
+              )
+            }
+            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-border py-2 text-xs font-medium hover:border-sage transition"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Edit
+          </button>
+
+
+          <button
+            onClick={() =>
+              deleteChallenge(
+                challenge._id
+              )
+            }
+            className="rounded-xl border border-border px-3 text-destructive hover:bg-destructive/5 transition"
+            title="Delete challenge"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+
+        </div>
+
+      </article>
+
+    ))}
+
+
+    {challenges.length === 0 &&
+      !loading && (
+        <p className="col-span-full rounded-3xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+          No challenges found.
+        </p>
+      )}
+
+  </div>
+
+</section>
 
 
               {/* ADMIN INFO */}
@@ -1048,6 +1543,286 @@ function AdminPage() {
             </div>
 
           )}
+
+
+          {/* CHALLENGE FORM MODAL */}
+
+{showChallengeForm && (
+
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-5 backdrop-blur-sm">
+
+    <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-border bg-card p-6 shadow-xl">
+
+      <div className="flex items-center justify-between">
+
+        <div>
+
+          <p className="text-xs uppercase tracking-widest text-sage">
+            Challenge Management
+          </p>
+
+          <h2 className="mt-1 font-display text-2xl">
+            {editingChallenge
+              ? "Edit Challenge"
+              : "Add Challenge"}
+          </h2>
+
+        </div>
+
+
+        <button
+          onClick={() =>
+            setShowChallengeForm(false)
+          }
+          className="rounded-xl p-2 hover:bg-beige transition"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+      </div>
+
+
+      <form
+        onSubmit={saveChallenge}
+        className="mt-6 space-y-4"
+      >
+
+        {/* EMOJI + TITLE */}
+
+        <div className="grid grid-cols-[80px_1fr] gap-3">
+
+          <input
+            value={challengeForm.emoji}
+            onChange={(e) =>
+              setChallengeForm({
+                ...challengeForm,
+                emoji: e.target.value,
+              })
+            }
+            className="rounded-2xl border border-border bg-background px-4 py-3 text-center text-xl outline-none focus:border-sage"
+            maxLength={4}
+          />
+
+
+          <input
+            value={challengeForm.title}
+            onChange={(e) =>
+              setChallengeForm({
+                ...challengeForm,
+                title: e.target.value,
+              })
+            }
+            placeholder="Challenge title"
+            className="rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-sage"
+          />
+
+        </div>
+
+
+        {/* SLUG */}
+
+        <div>
+
+          <label className="mb-2 block text-sm font-medium">
+            Slug
+          </label>
+
+          <input
+            value={challengeForm.slug}
+            disabled={!!editingChallenge}
+            onChange={(e) =>
+              setChallengeForm({
+                ...challengeForm,
+                slug: e.target.value,
+              })
+            }
+            placeholder="summer-cooking"
+            className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-sage disabled:opacity-50"
+          />
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            Used in the challenge URL. It cannot be changed after creation.
+          </p>
+
+        </div>
+
+
+        {/* DESCRIPTION */}
+
+        <textarea
+          value={challengeForm.description}
+          onChange={(e) =>
+            setChallengeForm({
+              ...challengeForm,
+              description:
+                e.target.value,
+            })
+          }
+          placeholder="Describe the challenge..."
+          rows={4}
+          className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-sage"
+        />
+
+
+        {/* TAG + GOAL */}
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+          <input
+            value={challengeForm.tag}
+            onChange={(e) =>
+              setChallengeForm({
+                ...challengeForm,
+                tag: e.target.value,
+              })
+            }
+            placeholder="Tag e.g. Breakfast"
+            className="rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-sage"
+          />
+
+
+          <input
+            type="number"
+            min="1"
+            value={challengeForm.goal}
+            onChange={(e) =>
+              setChallengeForm({
+                ...challengeForm,
+                goal: e.target.value,
+              })
+            }
+            placeholder="Participant goal"
+            className="rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-sage"
+          />
+
+        </div>
+
+
+        {/* DATES */}
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+          <div>
+
+            <label className="mb-2 block text-sm font-medium">
+              Start date
+            </label>
+
+            <input
+              type="datetime-local"
+              value={
+                challengeForm.startDate
+              }
+              onChange={(e) =>
+                setChallengeForm({
+                  ...challengeForm,
+                  startDate:
+                    e.target.value,
+                })
+              }
+              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-sage"
+            />
+
+          </div>
+
+
+          <div>
+
+            <label className="mb-2 block text-sm font-medium">
+              End date
+            </label>
+
+            <input
+              type="datetime-local"
+              value={
+                challengeForm.endDate
+              }
+              onChange={(e) =>
+                setChallengeForm({
+                  ...challengeForm,
+                  endDate:
+                    e.target.value,
+                })
+              }
+              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-sage"
+            />
+
+          </div>
+
+        </div>
+
+
+        {/* ACTIVE */}
+
+        <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-border p-4">
+
+          <input
+            type="checkbox"
+            checked={
+              challengeForm.active
+            }
+            onChange={(e) =>
+              setChallengeForm({
+                ...challengeForm,
+                active:
+                  e.target.checked,
+              })
+            }
+            className="h-4 w-4"
+          />
+
+          <div>
+
+            <p className="text-sm font-medium">
+              Active
+            </p>
+
+            <p className="text-xs text-muted-foreground">
+              Users can join while the challenge is active and has not expired.
+            </p>
+
+          </div>
+
+        </label>
+
+
+        {/* BUTTONS */}
+
+        <div className="flex gap-3 pt-3">
+
+          <button
+            type="button"
+            onClick={() =>
+              setShowChallengeForm(false)
+            }
+            className="flex-1 rounded-2xl border border-border py-3 text-sm font-medium hover:bg-beige transition"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="submit"
+            disabled={savingChallenge}
+            className="flex-1 rounded-2xl bg-sage py-3 text-sm font-medium text-sage-foreground hover:opacity-90 disabled:opacity-50 transition"
+          >
+            {savingChallenge
+              ? "Saving..."
+              : editingChallenge
+              ? "Save Changes"
+              : "Create Challenge"}
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+)}
+
 
         </main>
 

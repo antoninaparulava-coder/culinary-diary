@@ -10,6 +10,8 @@ const cloudinary = require("../config/cloudinary");
 const upload = require("../middleware/upload");
 const Challenge = require("../models/Challenge");
 
+Math
+
 /*
 GET /api/challenges
 
@@ -53,15 +55,35 @@ router.get("/", requireAuth, async (req, res) => {
       }
     });
 
+    function getDaysLeft(endDate) {
+      const now = new Date();
+
+      const today = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+      );
+
+      const end = new Date(endDate);
+
+      const endDay = new Date(
+        end.getFullYear(),
+        end.getMonth(),
+        end.getDate()
+      );
+
+      return Math.max(
+        0,
+        Math.ceil((endDay - today) / (1000 * 60 * 60 * 24))
+      );
+    }
+
     const result = challenges.map((challenge) => {
       const endDate = new Date(challenge.endDate);
 
       const difference = endDate.getTime() - now.getTime();
 
-      const daysLeft = Math.max(
-        0,
-        Math.ceil(difference / (1000 * 60 * 60 * 24))
-      );
+      const daysLeft = getDaysLeft(challenge.endDate);
 
       return {
         ...challenge,
